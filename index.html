@@ -232,29 +232,20 @@ function parseReceipt(text) {
   return r;
 }
 
-// ============ GOOGLE AUTH ============
+// ============ GOOGLE AUTH (redirect flow — mobile friendly) ============
 function doAuth() {
-  return new Promise((resolve, reject) => {
-    const redirect = window.location.origin + window.location.pathname;
-    const scope = "https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/cloud-vision";
-    const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(config.clientId)}&redirect_uri=${encodeURIComponent(redirect)}&response_type=token&scope=${encodeURIComponent(scope)}&prompt=consent`;
-    const popup = window.open(url, "gauth", "width=500,height=600");
-    if (!popup) { reject(new Error("Popup blocked. Allow popups and retry.")); return; }
-    const iv = setInterval(() => {
-      try {
-        if (popup.closed) { clearInterval(iv); reject(new Error("Sign-in cancelled")); return; }
-        const u = popup.location.href;
-        if (u.includes("access_token")) {
-          const p = new URLSearchParams(new URL(u).hash.substring(1));
-          accessToken = p.get("access_token");
-          popup.close(); clearInterval(iv); resolve(accessToken);
-        }
-      } catch(e) {}
-    }, 500);
-  });
+  // Save current state so we can resume after redirect
+  try {
+    sessionStorage.setItem("rt_pending", "1");
+    if (currentFile) sessionStorage.setItem("rt_fileName", currentFile.name);
+  } catch(e) {}
+  const redirect = window.location.origin + window.location.pathname;
+  const scope = "https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/cloud-vision";
+  const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(config.clientId)}&redirect_uri=${encodeURIComponent(redirect)}&response_type=token&scope=${encodeURIComponent(scope)}&prompt=consent`;
+  // Full page redirect instead of popup
+  window.location.href = url;
 }
 
-// Check URL hash on page load for redirect flow fallback
 function checkHashToken() {
   if (window.location.hash.includes("access_token")) {
     const p = new URLSearchParams(window.location.hash.substring(1));
@@ -267,7 +258,10 @@ function checkHashToken() {
 
 async function getToken() {
   if (accessToken) return accessToken;
-  return await doAuth();
+  // Redirect to Google — this won't return, page reloads after auth
+  doAuth();
+  // Throw to stop the current flow; it resumes on page reload
+  throw new Error("__redirect__");
 }
 
 // ============ GOOGLE APIs ============
@@ -428,7 +422,7 @@ async function handleFile(e) {
   setStatus("Signing in...");
 
   let token;
-  try { token = await getToken(); } catch(err) { setStatus("Sign-in required: " + err.message); renderReview(false); return; }
+  try { token = await getToken(); } catch(err) {   setStatus("Sign-in required: " + err.message); renderReview(false); return; }
 
   setStatus("Reading receipt text...");
   try {
@@ -448,7 +442,7 @@ async function uploadAndLog() {
   if (btn) { btn.disabled = true; btn.innerHTML = '<div class="spinner spinner-white" style="width:1rem;height:1rem;"></div> Saving...'; }
 
   let token;
-  try { token = await getToken(); } catch { setStatus("Auth failed."); renderReview(false); return; }
+  try { token = await getToken(); } catch(err) { if (err.message === "__redirect__") return; setStatus("Auth failed: " + err.message); renderReview(false); return; }
 
   const ml = getMonthLabel(formData.date);
 
@@ -528,9 +522,9 @@ function saveSettings() {
 }
 
 // ============ INIT ============
-checkHashToken();
+const wasAuthed = checkHashToken();
 renderCapture();
-if (accessToken) setStatus("Signed in! Ready to scan.");
+if (wasAuthed) setStatus("Signed in! Ready to scan receipts.");
 </script>
 
 </body>
