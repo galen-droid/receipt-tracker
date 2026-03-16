@@ -8,268 +8,982 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
 <style>
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;margin:0;background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 50%,#0f172a 100%);min-height:100vh}
-@keyframes spin{to{transform:rotate(360deg)}}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  margin: 0;
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0f172a 100%);
+  min-height: 100vh;
+}
+
+.page { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+.card { background: #fff; border-radius: 1.5rem; box-shadow: 0 25px 50px rgba(0,0,0,0.25); max-width: 28rem; width: 100%; overflow: hidden; }
+.card-header { background: linear-gradient(90deg, #2563eb, #4f46e5); padding: 1.25rem; color: #fff; }
+.card-header-row { display: flex; align-items: center; justify-content: space-between; }
+.card-title { display: flex; align-items: center; gap: 0.5rem; }
+.card-body { padding: 1.5rem; }
+.status-text { font-size: 0.8125rem; margin-top: 0.5rem; color: #bfdbfe; }
+
+.btn { border: none; cursor: pointer; font-family: inherit; }
+.btn-primary { width: 100%; background: #2563eb; color: #fff; border: none; border-radius: 0.75rem; padding: 0.75rem; font-weight: 600; cursor: pointer; text-align: center; font-size: 0.875rem; }
+.btn-primary:disabled { background: #d1d5db; color: #9ca3af; cursor: not-allowed; }
+.btn-secondary { flex: 1; background: #fff; color: #374151; border: 2px solid #e5e7eb; border-radius: 0.75rem; padding: 0.75rem; font-weight: 600; cursor: pointer; text-align: center; font-size: 0.875rem; }
+.btn-settings { background: rgba(255,255,255,0.2); border: none; color: rgba(255,255,255,0.8); font-size: 0.75rem; padding: 0.25rem 0.75rem; border-radius: 0.5rem; cursor: pointer; }
+.btn-google { display: inline-flex; align-items: center; gap: 0.75rem; background: #fff; border: 2px solid #e5e7eb; border-radius: 0.75rem; padding: 0.75rem 1.5rem; font-weight: 600; cursor: pointer; font-size: 0.875rem; color: #374151; }
+.btn-capture { display: flex; align-items: center; gap: 0.75rem; width: 100%; border-radius: 0.75rem; padding: 0.75rem 1rem; font-weight: 600; cursor: pointer; font-size: inherit; font-family: inherit; }
+.btn-capture-fill { background: #2563eb; color: #fff; border: none; }
+.btn-capture-outline { background: #fff; color: #374151; border: 2px solid #e5e7eb; }
+.btn-link { border: none; background: none; cursor: pointer; text-decoration: underline; font-size: 0.7rem; color: #9ca3af; }
+.btn-signout { border: none; background: none; color: #dc2626; font-size: 0.75rem; cursor: pointer; }
+
+.overlay { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+.overlay-dark { background: rgba(0,0,0,0.85); z-index: 60; cursor: pointer; }
+.overlay-dim { background: rgba(0,0,0,0.6); }
+.overlay-close { position: absolute; top: 1rem; right: 1rem; background: rgba(255,255,255,0.2); border: none; color: #fff; font-size: 1.5rem; width: 2.5rem; height: 2.5rem; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.modal { background: #fff; border-radius: 1rem; max-width: 28rem; width: 100%; padding: 1.5rem; max-height: 90vh; overflow-y: auto; }
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+.modal-close { border: none; background: none; color: #9ca3af; font-size: 1.25rem; cursor: pointer; }
+
+.form-row { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.625rem; }
+.form-label { font-size: 0.8125rem; color: #6b7280; width: 5.5rem; flex-shrink: 0; }
+.form-input { flex: 1; border: 1px solid #d1d5db; border-radius: 0.5rem; padding: 0.5rem 0.75rem; font-size: 0.875rem; outline: none; font-family: inherit; }
+.form-select { flex: 1; border: 1px solid #d1d5db; border-radius: 0.5rem; padding: 0.5rem 0.75rem; font-size: 0.875rem; outline: none; background: #fff; }
+.form-actions { display: flex; gap: 0.75rem; margin-top: 0.5rem; }
+
+.pill-group { display: flex; flex-wrap: wrap; gap: 0.375rem; flex: 1; }
+.pill { font-size: 0.75rem; padding: 0.3rem 0.6rem; border-radius: 9999px; cursor: pointer; border: 1.5px solid #d1d5db; background: #fff; color: #4b5563; font-family: inherit; }
+.pill:focus-visible { outline: 2px solid #2563eb; outline-offset: 1px; }
+.pill-active { border-color: #2563eb; background: #2563eb; color: #fff; }
+
+.staff-badge { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 0.75rem; padding: 0.5rem 0.75rem; display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; font-size: 0.875rem; }
+.info-box { background: #fffbeb; border: 1px solid #fde68a; border-radius: 0.75rem; padding: 0.75rem; margin-bottom: 1rem; }
+.success-box { background: #f0fdf4; border-radius: 0.75rem; padding: 1rem; text-align: left; margin-top: 1rem; }
+.token-warning { font-size: 0.75rem; margin-top: 0.5rem; color: #fde68a; }
+
+.upload-zone { border: 2px dashed #d1d5db; border-radius: 1rem; padding: 1.5rem; }
+.upload-buttons { display: flex; flex-direction: column; gap: 0.625rem; }
+
+.preview-container { border: 1px solid #e5e7eb; border-radius: 1rem; overflow: hidden; max-height: 9rem; display: flex; align-items: center; justify-content: center; background: #f9fafb; margin-bottom: 0.75rem; cursor: pointer; position: relative; }
+.preview-pdf { border: 1px solid #e5e7eb; border-radius: 1rem; background: #f9fafb; padding: 1rem; display: flex; align-items: center; justify-content: center; gap: 0.75rem; margin-bottom: 0.75rem; }
+.preview-badge { position: absolute; bottom: 0.375rem; right: 0.375rem; background: rgba(0,0,0,0.5); color: #fff; font-size: 0.65rem; padding: 0.15rem 0.4rem; border-radius: 0.25rem; }
+.preview-thumb { max-height: 9rem; object-fit: contain; }
+.fullscreen-img { max-width: 100%; max-height: 90vh; object-fit: contain; border-radius: 0.5rem; }
+
+.ocr-text { font-size: 0.7rem; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 0.5rem; padding: 0.75rem; max-height: 8rem; overflow: auto; white-space: pre-wrap; color: #6b7280; font-family: monospace; margin-bottom: 0.75rem; }
+
+.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem; }
+.section-title { font-size: 0.8125rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin: 0; }
+
+.history-list { display: flex; flex-direction: column; gap: 0.5rem; max-height: 13rem; overflow-y: auto; }
+.history-item { display: flex; align-items: center; justify-content: space-between; background: #f9fafb; border-radius: 0.75rem; padding: 0.625rem 1rem; font-size: 0.875rem; }
+
+.month-badge { font-size: 0.75rem; background: #e0e7ff; color: #4338ca; padding: 0.125rem 0.5rem; border-radius: 9999px; }
+.settings-field { margin-bottom: 1rem; }
+.settings-label { display: block; font-size: 0.8125rem; font-weight: 500; color: #374151; }
+.settings-input { width: 100%; border: 1px solid #d1d5db; border-radius: 0.5rem; padding: 0.5rem 0.75rem; font-size: 0.875rem; margin-top: 0.25rem; outline: none; }
+
+.centered { text-align: center; }
+.centered-padded { text-align: center; padding: 2rem 0; }
+.loading-center { display: flex; align-items: center; justify-content: center; padding: 2rem; gap: 0.75rem; }
+.loading-row { display: flex; align-items: center; justify-content: center; padding: 1.5rem; gap: 0.75rem; }
+
+.text-muted { color: #6b7280; }
+.text-sm { font-size: 0.875rem; }
+.text-xs { font-size: 0.8125rem; }
+.text-success { color: #15803d; font-weight: 600; }
+.hidden { display: none; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner { width: 1.25rem; height: 1.25rem; border: 2px solid #2563eb; border-top-color: transparent; border-radius: 50%; animation: spin 0.6s linear infinite; }
 </style>
 </head>
 <body>
 <div id="root"></div>
 <script type="text/babel">
-var DEF_CID="186804789210-t6r2g6had74t7ven14nlt1pi7hl14onr.apps.googleusercontent.com";
-var DEF_FID="1IX1tvkckzHuyLx4OWK26RtpF_qAyyV9o";
-var DEF_SID="1gyG6r2Mp2y402G9IU6oJ7a9BLVQAzeVRm9OpA83apmg";
-var MO=["January","February","March","April","May","June","July","August","September","October","November","December"];
-var CCODES=["CAD","USD","EUR","GBP","AUD","NZD","JPY","CNY","HKD","SGD","CHF","SEK","NOK","DKK","INR","KRW","THB","MXN","BRL","ZAR"];
-var CATS=["Food","Travel","Hotel","Entertainment","Other"];
-var HDRS=["Staff","Date","Merchant","Category","Description","Total","Currency","Payment","Drive URL","Logged At"];
 
-function xid(v){if(!v)return"";var m=v.match(/folders\/([a-zA-Z0-9_-]+)/);if(m)return m[1];m=v.match(/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);if(m)return m[1];return v.trim();}
-function getML(ds){var d;if(ds&&ds.match(/^\d{4}-\d{2}/)){var p=ds.split("-");d=new Date(parseInt(p[0]),parseInt(p[1])-1,1);}else d=new Date();return MO[d.getMonth()]+" "+d.getFullYear();}
-function fileToB64(f){return new Promise(function(res,rej){var r=new FileReader();r.onload=function(){res(r.result);};r.onerror=function(){rej(new Error("read fail"));};r.readAsDataURL(f);});}
-function resizeImg(dataUrl,maxDim){return new Promise(function(res){var img=new Image();img.onload=function(){var w=img.width,h=img.height,s=maxDim/Math.max(w,h);if(s<1){w=Math.round(w*s);h=Math.round(h*s);}var c=document.createElement("canvas");c.width=w;c.height=h;c.getContext("2d").drawImage(img,0,0,w,h);res(c.toDataURL("image/jpeg",0.85));};img.src=dataUrl;});}
+/* ── Constants ──────────────────────────────────────────────────────────── */
 
-function parseReceipt(text,staffName){
-  var lines=text.split("\n").map(function(l){return l.trim();}).filter(Boolean);
-  var up=text.toUpperCase();
-  var r={staff:staffName,date:"",merchant:"",category:"Food",description:"",total:"",currency:"",payment:""};
-  var skipW=["receipt","cardholder","copy","tax invoice","terminal","duplicate","server","cashier","transaction","order","table","guest","station","ticket","dine"];
-  for(var i=0;i<Math.min(lines.length,6);i++){
-    var ln=lines[i].replace(/[*#=]+/g,"").trim();
-    if(ln.length<2)continue;
-    var skip=false;
-    for(var si=0;si<skipW.length;si++){if(ln.toLowerCase().indexOf(skipW[si])>=0){skip=true;break;}}
-    if(skip)continue;
-    if(ln.match(/^[\d\-\/\.\:\s]+$/))continue;
-    if(ln.match(/^(tel|phone|fax|www|http|abn|gst|mid|aid|tid)/i))continue;
-    if(ln.match(/^\(?\d{3}\)?[\s\-]?\d{3}[\s\-]?\d{4}$/))continue;
-    r.merchant=ln;break;
-  }
-  var mmap={jan:"01",feb:"02",mar:"03",apr:"04",may:"05",jun:"06",jul:"07",aug:"08",sep:"09",oct:"10",nov:"11",dec:"12"};
-  for(i=0;i<lines.length;i++){
-    var L=lines[i];var dm;
-    dm=L.match(/(\d{4})[\-\/\.](\d{1,2})[\-\/\.](\d{1,2})/);
-    if(dm){r.date=dm[1]+"-"+("0"+dm[2]).slice(-2)+"-"+("0"+dm[3]).slice(-2);break;}
-    dm=L.match(/(\d{1,2})[\-\s]+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*[\-\s,]+(\d{4})/i);
-    if(dm){r.date=dm[3]+"-"+mmap[dm[2].substring(0,3).toLowerCase()]+"-"+("0"+dm[1]).slice(-2);break;}
-    dm=L.match(/(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*[\s\-]+(\d{1,2})[\s,\-]+(\d{4})/i);
-    if(dm){r.date=dm[3]+"-"+mmap[dm[1].substring(0,3).toLowerCase()]+"-"+("0"+dm[2]).slice(-2);break;}
-    dm=L.match(/(\d{1,2})[\-\/](\d{1,2})[\-\/](\d{4})/);
-    if(dm){var a=parseInt(dm[1]),b=parseInt(dm[2]);if(a>12)r.date=dm[3]+"-"+("0"+b).slice(-2)+"-"+("0"+a).slice(-2);else r.date=dm[3]+"-"+("0"+a).slice(-2)+"-"+("0"+b).slice(-2);break;}
-    dm=L.match(/(\d{1,2})\/(\d{1,2})\/(\d{2})(?!\d)/);
-    if(dm){var y2="20"+dm[3];a=parseInt(dm[1]);b=parseInt(dm[2]);if(a>12)r.date=y2+"-"+("0"+b).slice(-2)+"-"+("0"+a).slice(-2);else r.date=y2+"-"+("0"+a).slice(-2)+"-"+("0"+b).slice(-2);break;}
-  }
-  for(i=0;i<CCODES.length;i++){if(up.indexOf(CCODES[i])>=0){r.currency=CCODES[i];break;}}
-  if(!r.currency&&text.indexOf("$")>=0)r.currency="USD";
-  var tots=[];
-  var tpats=[/balance\s*due[\s:]*\$?\s*([\d,]+\.\d{2})/gi,/grand\s*total[\s:]*\$?\s*(?:CAD|USD|EUR|GBP)?\s*([\d,]+\.\d{2})/gi,/\btotal[\s:]*\$?\s*(?:CAD|USD|EUR|GBP)?\s*([\d,]+\.\d{2})/gi];
-  for(i=0;i<tpats.length;i++){var re=tpats[i];var tm;while((tm=re.exec(text))!==null){var v=parseFloat(tm[1].replace(/,/g,""));if(!isNaN(v)&&v>0)tots.push(v);}}
-  var subpat=/sub\s*total[\s:]*\$?\s*([\d,]+\.\d{2})/gi;var subs=[];var sm;
-  while((sm=subpat.exec(text))!==null){subs.push(parseFloat(sm[1].replace(/,/g,"")));}
-  var filtered=tots.filter(function(t){for(var j=0;j<subs.length;j++){if(Math.abs(t-subs[j])<0.01)return false;}return true;});
-  if(filtered.length>0)r.total=Math.max.apply(null,filtered).toFixed(2);
-  else if(tots.length>0)r.total=Math.max.apply(null,tots).toFixed(2);
-  var cpats=[/visa\s*(?:prepaid\s*)?(?:\S*?)(\d{4})/i,/mastercard\s*(?:\S*?)(\d{4})/i,/amex\s*(?:\S*?)(\d{4})/i,/x{4,}(\d{4})/i,/\*{4,}(\d{4})/i];
-  for(i=0;i<lines.length;i++){for(var ci=0;ci<cpats.length;ci++){var cm=lines[i].match(cpats[ci]);if(cm){var ctype="Card";if(lines[i].match(/visa/i))ctype="Visa";else if(lines[i].match(/master/i))ctype="Mastercard";else if(lines[i].match(/amex/i))ctype="Amex";r.payment=ctype+" ****"+cm[1];break;}}if(r.payment)break;}
-  if(!r.payment&&text.match(/\bcash\b/i)&&!text.match(/cash\s*back/i))r.payment="Cash";
-  else if(!r.payment&&text.match(/\bdebit\b/i))r.payment="Debit";
-  var dskip=/total|subtotal|sub total|tax|balance|change|tendered|visa|master|debit|credit|payment|cash|gratuity|tip|method|contactless|chip|pin|auth|ref|clover|cardholder|signature|retain|copy|ticket|order|table|guest|server|cashier|station|transaction|gst|pst|hst/i;
-  var items=[];
-  for(i=0;i<lines.length;i++){if(!lines[i].match(/\d+\.\d{2}/))continue;if(dskip.test(lines[i]))continue;var cd=lines[i].replace(/\$?\s*[\d,]+\.\d{2}\s*$/,"").trim().replace(/^\d+\s*[xX]?\s+/,"").trim();if(cd.length>1&&cd.length<60&&!cd.match(/^[\d\s\.\-\*]+$/))items.push(cd);}
-  r.description=items.slice(0,5).join(", ");
-  var lt=text.toLowerCase();
-  if(lt.match(/hotel|inn|suite|resort|motel|lodge|airbnb/))r.category="Hotel";
-  else if(lt.match(/uber|lyft|taxi|airline|flight|airport|parking|fuel|petrol/))r.category="Travel";
-  else if(lt.match(/cinema|movie|theatre|theater|concert|museum|gallery/))r.category="Entertainment";
-  return r;
+var DEFAULT_CLIENT_ID = "186804789210-t6r2g6had74t7ven14nlt1pi7hl14onr.apps.googleusercontent.com";
+var DEFAULT_FOLDER_ID = "1IX1tvkckzHuyLx4OWK26RtpF_qAyyV9o";
+var DEFAULT_SHEET_ID = "1gyG6r2Mp2y402G9IU6oJ7a9BLVQAzeVRm9OpA83apmg";
+var MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+var CURRENCY_CODES = ["CAD","USD","EUR","GBP","AUD","NZD","JPY","CNY","HKD","SGD","CHF","SEK","NOK","DKK","INR","KRW","THB","MXN","BRL","ZAR"];
+var CATEGORIES = ["Food","Travel","Hotel","Entertainment","Other"];
+var SHEET_HEADERS = ["Staff","Date","Merchant","Category","Description","Total","Currency","Payment","Drive URL","Logged At"];
+var CURRENCY_OPTIONS = ["","CAD","USD","EUR","GBP","AUD","JPY","CHF","Other"];
+var TOKEN_WARN_MS = 10 * 60 * 1000;
+
+var EMPTY_FORM = {staff:"",date:"",merchant:"",category:"Food",description:"",total:"",currency:"",payment:""};
+
+/* ── Utility Functions ──────────────────────────────────────────────────── */
+
+function extractId(value) {
+  if (!value) return "";
+  var match = value.match(/folders\/([a-zA-Z0-9_-]+)/);
+  if (match) return match[1];
+  match = value.match(/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+  if (match) return match[1];
+  return value.trim();
 }
 
-function visionOCR(token,b64){
-  return fetch("https://vision.googleapis.com/v1/images:annotate?access_token="+encodeURIComponent(token),{
-    method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({requests:[{image:{content:b64},features:[{type:"TEXT_DETECTION",maxResults:1}]}]})
-  }).then(function(r){if(!r.ok)return r.text().then(function(t){throw new Error("Vision: "+t.substring(0,200));});return r.json();})
-  .then(function(d){
-    if(d.responses&&d.responses[0]&&d.responses[0].error)throw new Error("Vision: "+d.responses[0].error.message);
-    if(d.responses&&d.responses[0]&&d.responses[0].fullTextAnnotation)return d.responses[0].fullTextAnnotation.text;
-    if(d.responses&&d.responses[0]&&d.responses[0].textAnnotations&&d.responses[0].textAnnotations[0])return d.responses[0].textAnnotations[0].description;
-    return"";
+function getMonthLabel(dateString) {
+  var d;
+  if (dateString && dateString.match(/^\d{4}-\d{2}/)) {
+    var parts = dateString.split("-");
+    d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, 1);
+  } else {
+    d = new Date();
+  }
+  return MONTHS[d.getMonth()] + " " + d.getFullYear();
+}
+
+function fileToBase64(file) {
+  return new Promise(function(resolve, reject) {
+    var reader = new FileReader();
+    reader.onload = function() { resolve(reader.result); };
+    reader.onerror = function() { reject(new Error("Failed to read file")); };
+    reader.readAsDataURL(file);
   });
 }
 
-function mkFolder(token,label,parentId){
-  var q="name='"+label+"' and '"+parentId+"' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false";
-  return fetch("https://www.googleapis.com/drive/v3/files?q="+encodeURIComponent(q)+"&fields=files(id)",{headers:{Authorization:"Bearer "+token}})
-  .then(function(r){return r.json();}).then(function(d){
-    if(d.files&&d.files.length>0)return d.files[0].id;
-    return fetch("https://www.googleapis.com/drive/v3/files",{method:"POST",headers:{Authorization:"Bearer "+token,"Content-Type":"application/json"},body:JSON.stringify({name:label,mimeType:"application/vnd.google-apps.folder",parents:[parentId]})}).then(function(r){return r.json();}).then(function(d){return d.id;});
+function resizeImage(dataUrl, maxDimension) {
+  return new Promise(function(resolve) {
+    var img = new Image();
+    img.onload = function() {
+      var w = img.width, h = img.height;
+      var scale = maxDimension / Math.max(w, h);
+      if (scale < 1) { w = Math.round(w * scale); h = Math.round(h * scale); }
+      var canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL("image/jpeg", 0.85));
+    };
+    img.src = dataUrl;
   });
 }
 
-function mkSheet(token,label,sheetId){
-  return fetch("https://sheets.googleapis.com/v4/spreadsheets/"+sheetId+"?fields=sheets.properties",{headers:{Authorization:"Bearer "+token}})
-  .then(function(r){return r.json();}).then(function(meta){
-    var found=false;if(meta.sheets){for(var i=0;i<meta.sheets.length;i++){if(meta.sheets[i].properties.title===label){found=true;break;}}}
-    if(found)return label;
-    return fetch("https://sheets.googleapis.com/v4/spreadsheets/"+sheetId+":batchUpdate",{method:"POST",headers:{Authorization:"Bearer "+token,"Content-Type":"application/json"},body:JSON.stringify({requests:[{addSheet:{properties:{title:label}}}]})})
-    .then(function(){return fetch("https://sheets.googleapis.com/v4/spreadsheets/"+sheetId+"/values/"+encodeURIComponent(label)+"!A1:J1?valueInputOption=USER_ENTERED",{method:"PUT",headers:{Authorization:"Bearer "+token,"Content-Type":"application/json"},body:JSON.stringify({values:[HDRS]})});})
-    .then(function(){return label;});
+function mergeForm(prev, updates) {
+  var out = {};
+  for (var k in prev) out[k] = prev[k];
+  for (var k2 in updates) out[k2] = updates[k2];
+  return out;
+}
+
+/* ── Receipt Parsing ────────────────────────────────────────────────────── */
+
+var MERCHANT_NOISE = [
+  "receipt","cardholder","copy","tax invoice","terminal","duplicate",
+  "server","cashier","transaction","order","table","guest","station","ticket","dine"
+];
+var MONTH_MAP = {jan:"01",feb:"02",mar:"03",apr:"04",may:"05",jun:"06",jul:"07",aug:"08",sep:"09",oct:"10",nov:"11",dec:"12"};
+
+function extractMerchant(lines) {
+  for (var i = 0; i < Math.min(lines.length, 6); i++) {
+    var line = lines[i].replace(/[*#=]+/g, "").trim();
+    if (line.length < 2) continue;
+    var skip = false;
+    for (var j = 0; j < MERCHANT_NOISE.length; j++) {
+      if (line.toLowerCase().indexOf(MERCHANT_NOISE[j]) >= 0) { skip = true; break; }
+    }
+    if (skip) continue;
+    if (line.match(/^[\d\-\/\.\:\s]+$/)) continue;
+    if (line.match(/^(tel|phone|fax|www|http|abn|gst|mid|aid|tid)/i)) continue;
+    if (line.match(/^\(?\d{3}\)?[\s\-]?\d{3}[\s\-]?\d{4}$/)) continue;
+    return line;
+  }
+  return "";
+}
+
+function extractDate(lines) {
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i];
+    var m;
+    m = line.match(/(\d{4})[\-\/\.](\d{1,2})[\-\/\.](\d{1,2})/);
+    if (m) return m[1] + "-" + ("0" + m[2]).slice(-2) + "-" + ("0" + m[3]).slice(-2);
+
+    m = line.match(/(\d{1,2})[\-\s]+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*[\-\s,]+(\d{4})/i);
+    if (m) return m[3] + "-" + MONTH_MAP[m[2].substring(0,3).toLowerCase()] + "-" + ("0" + m[1]).slice(-2);
+
+    m = line.match(/(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*[\s\-]+(\d{1,2})[\s,\-]+(\d{4})/i);
+    if (m) return m[3] + "-" + MONTH_MAP[m[1].substring(0,3).toLowerCase()] + "-" + ("0" + m[2]).slice(-2);
+
+    m = line.match(/(\d{1,2})[\-\/](\d{1,2})[\-\/](\d{4})/);
+    if (m) {
+      var a = parseInt(m[1]), b = parseInt(m[2]);
+      if (a > 12) return m[3] + "-" + ("0" + b).slice(-2) + "-" + ("0" + a).slice(-2);
+      return m[3] + "-" + ("0" + a).slice(-2) + "-" + ("0" + b).slice(-2);
+    }
+
+    m = line.match(/(\d{1,2})\/(\d{1,2})\/(\d{2})(?!\d)/);
+    if (m) {
+      var y = "20" + m[3];
+      a = parseInt(m[1]); b = parseInt(m[2]);
+      if (a > 12) return y + "-" + ("0" + b).slice(-2) + "-" + ("0" + a).slice(-2);
+      return y + "-" + ("0" + a).slice(-2) + "-" + ("0" + b).slice(-2);
+    }
+  }
+  return "";
+}
+
+function extractTotal(text) {
+  var patterns = [
+    /balance\s*due[\s:]*\$?\s*([\d,]+\.\d{2})/gi,
+    /grand\s*total[\s:]*\$?\s*(?:CAD|USD|EUR|GBP)?\s*([\d,]+\.\d{2})/gi,
+    /\btotal[\s:]*\$?\s*(?:CAD|USD|EUR|GBP)?\s*([\d,]+\.\d{2})/gi
+  ];
+  var totals = [];
+  for (var i = 0; i < patterns.length; i++) {
+    var re = patterns[i];
+    var match;
+    while ((match = re.exec(text)) !== null) {
+      var val = parseFloat(match[1].replace(/,/g, ""));
+      if (!isNaN(val) && val > 0) totals.push(val);
+    }
+  }
+  var subRe = /sub\s*total[\s:]*\$?\s*([\d,]+\.\d{2})/gi;
+  var subtotals = [];
+  var sm;
+  while ((sm = subRe.exec(text)) !== null) {
+    subtotals.push(parseFloat(sm[1].replace(/,/g, "")));
+  }
+  var filtered = totals.filter(function(t) {
+    for (var j = 0; j < subtotals.length; j++) {
+      if (Math.abs(t - subtotals[j]) < 0.01) return false;
+    }
+    return true;
+  });
+  if (filtered.length > 0) return Math.max.apply(null, filtered).toFixed(2);
+  if (totals.length > 0) return Math.max.apply(null, totals).toFixed(2);
+  return "";
+}
+
+function extractCurrency(text) {
+  var upper = text.toUpperCase();
+  for (var i = 0; i < CURRENCY_CODES.length; i++) {
+    if (upper.indexOf(CURRENCY_CODES[i]) >= 0) return CURRENCY_CODES[i];
+  }
+  if (text.indexOf("$") >= 0) return "USD";
+  return "";
+}
+
+function extractPayment(lines, text) {
+  var cardPatterns = [
+    /visa\s*(?:prepaid\s*)?(?:\S*?)(\d{4})/i,
+    /mastercard\s*(?:\S*?)(\d{4})/i,
+    /amex\s*(?:\S*?)(\d{4})/i,
+    /x{4,}(\d{4})/i,
+    /\*{4,}(\d{4})/i
+  ];
+  for (var i = 0; i < lines.length; i++) {
+    for (var j = 0; j < cardPatterns.length; j++) {
+      var match = lines[i].match(cardPatterns[j]);
+      if (match) {
+        var type = "Card";
+        if (lines[i].match(/visa/i)) type = "Visa";
+        else if (lines[i].match(/master/i)) type = "Mastercard";
+        else if (lines[i].match(/amex/i)) type = "Amex";
+        return type + " ****" + match[1];
+      }
+    }
+  }
+  if (text.match(/\bcash\b/i) && !text.match(/cash\s*back/i)) return "Cash";
+  if (text.match(/\bdebit\b/i)) return "Debit";
+  return "";
+}
+
+function extractCategory(text) {
+  var lower = text.toLowerCase();
+  if (lower.match(/hotel|inn|suite|resort|motel|lodge|airbnb/)) return "Hotel";
+  if (lower.match(/uber|lyft|taxi|airline|flight|airport|parking|fuel|petrol/)) return "Travel";
+  if (lower.match(/cinema|movie|theatre|theater|concert|museum|gallery/)) return "Entertainment";
+  return "Food";
+}
+
+function extractDescription(lines) {
+  var noise = /total|subtotal|sub total|tax|balance|change|tendered|visa|master|debit|credit|payment|cash|gratuity|tip|method|contactless|chip|pin|auth|ref|clover|cardholder|signature|retain|copy|ticket|order|table|guest|server|cashier|station|transaction|gst|pst|hst/i;
+  var items = [];
+  for (var i = 0; i < lines.length; i++) {
+    if (!lines[i].match(/\d+\.\d{2}/)) continue;
+    if (noise.test(lines[i])) continue;
+    var cleaned = lines[i].replace(/\$?\s*[\d,]+\.\d{2}\s*$/, "").trim().replace(/^\d+\s*[xX]?\s+/, "").trim();
+    if (cleaned.length > 1 && cleaned.length < 60 && !cleaned.match(/^[\d\s\.\-\*]+$/)) {
+      items.push(cleaned);
+    }
+  }
+  return items.slice(0, 5).join(", ");
+}
+
+function parseReceipt(text, staffName) {
+  var lines = text.split("\n").map(function(l) { return l.trim(); }).filter(Boolean);
+  return {
+    staff: staffName,
+    merchant: extractMerchant(lines),
+    date: extractDate(lines),
+    total: extractTotal(text),
+    currency: extractCurrency(text),
+    payment: extractPayment(lines, text),
+    category: extractCategory(text),
+    description: extractDescription(lines)
+  };
+}
+
+/* ── API Functions ──────────────────────────────────────────────────────── */
+
+function visionOCR(token, base64) {
+  return fetch("https://vision.googleapis.com/v1/images:annotate?access_token=" + encodeURIComponent(token), {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({requests: [{image: {content: base64}, features: [{type: "TEXT_DETECTION", maxResults: 1}]}]})
+  })
+  .then(function(r) {
+    if (!r.ok) return r.text().then(function(t) { throw new Error("Vision: " + t.substring(0, 200)); });
+    return r.json();
+  })
+  .then(function(data) {
+    var resp = data.responses && data.responses[0];
+    if (resp && resp.error) throw new Error("Vision: " + resp.error.message);
+    if (resp && resp.fullTextAnnotation) return resp.fullTextAnnotation.text;
+    if (resp && resp.textAnnotations && resp.textAnnotations[0]) return resp.textAnnotations[0].description;
+    return "";
   });
 }
 
-function App(){
-  var storedStaff="";try{storedStaff=localStorage.getItem("rt_staff")||"";}catch(e){}
-  var [cfg,setCfg]=React.useState({clientId:DEF_CID,folderId:DEF_FID,sheetId:DEF_SID});
-  var [staff,setStaffState]=React.useState(storedStaff);
-  var [tok,setTok]=React.useState(function(){
-    if(window.location.hash.indexOf("access_token")>=0){var p=new URLSearchParams(window.location.hash.substring(1));var t=p.get("access_token");window.history.replaceState(null,"",window.location.pathname);return t;}return null;
+function getUserInfo(token) {
+  return fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
+    headers: {Authorization: "Bearer " + token}
+  })
+  .then(function(r) {
+    if (!r.ok) throw new Error("Failed to get user info");
+    return r.json();
+  })
+  .then(function(data) { return data.name || data.email || ""; })
+  .catch(function() { return ""; });
+}
+
+function findOrCreateFolder(token, name, parentId) {
+  var query = "name='" + name + "' and '" + parentId + "' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false";
+  return fetch("https://www.googleapis.com/drive/v3/files?q=" + encodeURIComponent(query) + "&fields=files(id)", {
+    headers: {Authorization: "Bearer " + token}
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.files && data.files.length > 0) return data.files[0].id;
+    return fetch("https://www.googleapis.com/drive/v3/files", {
+      method: "POST",
+      headers: {Authorization: "Bearer " + token, "Content-Type": "application/json"},
+      body: JSON.stringify({name: name, mimeType: "application/vnd.google-apps.folder", parents: [parentId]})
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) { return d.id; });
   });
-  var [step,setStep]=React.useState("capture");
-  var [file,setFile]=React.useState(null);
-  var [preview,setPreview]=React.useState(null);
-  var [fd,setFd]=React.useState({staff:storedStaff,date:"",merchant:"",category:"Food",description:"",total:"",currency:"",payment:""});
-  var [status,setStatus]=React.useState(function(){if(window.location.hash.indexOf("access_token")>=0)return"Signed in!";return"";});
-  var [processing,setProcessing]=React.useState(false);
-  var [hist,setHist]=React.useState([]);
-  var [ocrText,setOcrText]=React.useState("");
-  var [showOcr,setShowOcr]=React.useState(false);
-  var [showSettings,setShowSettings]=React.useState(false);
-  var [showStaffPrompt,setShowStaffPrompt]=React.useState(!storedStaff);
-  var [tmpStaff,setTmpStaff]=React.useState("");
-  var [tmpCfg,setTmpCfg]=React.useState({...cfg,staff:storedStaff});
-  var camRef=React.useRef(null);var photoRef=React.useRef(null);var pdfRef=React.useRef(null);
+}
 
-  function setStaff(name){setStaffState(name);try{localStorage.setItem("rt_staff",name);}catch(e){}}
-  function doAuth(){
-    var rd=window.location.origin+window.location.pathname;
-    var sc="https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/cloud-vision";
-    window.location.href="https://accounts.google.com/o/oauth2/v2/auth?client_id="+encodeURIComponent(cfg.clientId)+"&redirect_uri="+encodeURIComponent(rd)+"&response_type=token&scope="+encodeURIComponent(sc)+"&prompt=consent";
-  }
-  function updateField(key,val){setFd(function(prev){var n={};for(var k in prev)n[k]=prev[k];n[key]=val;return n;});}
-
-  function handleFile(e){
-    var f=e.target.files?e.target.files[0]:null;if(!f)return;e.target.value="";
-    if(!staff){setShowStaffPrompt(true);return;}
-    if(!tok){doAuth();return;}
-    setFile(f);setOcrText("");setShowOcr(false);setProcessing(true);setStep("review");setStatus("Preparing...");
-    var isPdf=f.type==="application/pdf";
-    fileToB64(f).then(function(dataUrl){
-      if(!isPdf){return resizeImg(dataUrl,1024).then(function(resized){setPreview(resized);return resized.split(",")[1];});}
-      else{setPreview(null);return dataUrl.split(",")[1];}
-    }).then(function(b64){
-      setStatus("Reading receipt...");return visionOCR(tok,b64);
-    }).then(function(raw){
-      setOcrText(raw);
-      if(!raw){setStatus("No text found.");setFd({staff:staff,date:new Date().toISOString().split("T")[0],merchant:"",category:"Food",description:"",total:"",currency:"",payment:""});}
-      else{var parsed=parseReceipt(raw,staff);setFd(parsed);setStatus("Receipt analyzed! Review and save.");}
-      setProcessing(false);
-    }).catch(function(err){setStatus("Error: "+err.message);setFd({staff:staff,date:new Date().toISOString().split("T")[0],merchant:"",category:"Food",description:"",total:"",currency:"",payment:""});setProcessing(false);});
-  }
-
-  function uploadAndLog(){
-    if(!file||!fd.total)return;if(!tok){doAuth();return;}
-    setProcessing(true);var monthLabel=getML(fd.date);setStatus("Creating folder: "+monthLabel+"...");
-    mkFolder(tok,monthLabel,cfg.folderId).then(function(fid){
-      setStatus("Uploading to Drive...");
-      var ext=file.type==="application/pdf"?"pdf":"jpg";
-      var safe=(fd.merchant||"receipt").replace(/[^a-zA-Z0-9 ]/g,"").substring(0,30).trim().replace(/\s+/g,"_");
-      var meta={name:safe+"_"+(fd.date||"unknown")+"_"+Date.now()+"."+ext,parents:[fid]};
-      var form=new FormData();form.append("metadata",new Blob([JSON.stringify(meta)],{type:"application/json"}));form.append("file",file);
-      return fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink",{method:"POST",headers:{Authorization:"Bearer "+tok},body:form});
-    }).then(function(r){if(!r.ok)return r.text().then(function(t){throw new Error(t);});return r.json();})
-    .then(function(d){
-      var driveUrl=d.webViewLink||"https://drive.google.com/file/d/"+d.id+"/view";
-      setStatus("Logging to sheet...");
-      return mkSheet(tok,monthLabel,cfg.sheetId).then(function(tab){
-        var row=[fd.staff,fd.date,fd.merchant,fd.category,fd.description,fd.total,fd.currency,fd.payment,driveUrl,new Date().toISOString()];
-        return fetch("https://sheets.googleapis.com/v4/spreadsheets/"+cfg.sheetId+"/values/"+encodeURIComponent(tab)+"!A:J:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS",{method:"POST",headers:{Authorization:"Bearer "+tok,"Content-Type":"application/json"},body:JSON.stringify({values:[row]})});
-      }).then(function(r){if(!r.ok)return r.text().then(function(t){throw new Error(t);});
-        var entry={};for(var k in fd)entry[k]=fd[k];entry.driveUrl=driveUrl;entry.monthLabel=monthLabel;
-        setHist(function(prev){return prev.concat([entry]);});setStatus("Done! Receipt saved.");setStep("done");setProcessing(false);
+function ensureSheet(token, tabName, sheetId) {
+  return fetch("https://sheets.googleapis.com/v4/spreadsheets/" + sheetId + "?fields=sheets.properties", {
+    headers: {Authorization: "Bearer " + token}
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(meta) {
+    var found = false;
+    if (meta.sheets) {
+      for (var i = 0; i < meta.sheets.length; i++) {
+        if (meta.sheets[i].properties.title === tabName) { found = true; break; }
+      }
+    }
+    if (found) return tabName;
+    return fetch("https://sheets.googleapis.com/v4/spreadsheets/" + sheetId + ":batchUpdate", {
+      method: "POST",
+      headers: {Authorization: "Bearer " + token, "Content-Type": "application/json"},
+      body: JSON.stringify({requests: [{addSheet: {properties: {title: tabName}}}]})
+    })
+    .then(function() {
+      return fetch("https://sheets.googleapis.com/v4/spreadsheets/" + sheetId + "/values/" + encodeURIComponent(tabName) + "!A1:J1?valueInputOption=USER_ENTERED", {
+        method: "PUT",
+        headers: {Authorization: "Bearer " + token, "Content-Type": "application/json"},
+        body: JSON.stringify({values: [SHEET_HEADERS]})
       });
-    }).catch(function(err){setStatus("Error: "+err.message);setProcessing(false);});
+    })
+    .then(function() { return tabName; });
+  });
+}
+
+/* ── Error Boundary ─────────────────────────────────────────────────────── */
+
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="centered-padded">
+          <div style={{fontSize:"3rem",marginBottom:"0.5rem"}}>⚠️</div>
+          <h2 style={{fontSize:"1.25rem",fontWeight:700}}>Something went wrong</h2>
+          <p className="text-muted text-sm" style={{marginBottom:"1rem"}}>Try refreshing the page.</p>
+          <button className="btn-primary" onClick={function(){window.location.reload();}}>Reload</button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+/* ── Components ─────────────────────────────────────────────────────────── */
+
+function GoogleIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+      <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 01-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/>
+      <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z"/>
+      <path fill="#FBBC05" d="M3.964 10.706A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.706V4.962H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.038l3.007-2.332z"/>
+      <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.962L3.964 7.294C4.672 5.166 6.656 3.58 9 3.58z"/>
+    </svg>
+  );
+}
+
+function FullScreenPreview(props) {
+  if (!props.src) return null;
+  return (
+    <div className="overlay overlay-dark" onClick={props.onClose} role="dialog" aria-modal="true" aria-label="Full-size receipt preview">
+      <button className="overlay-close" onClick={function(e) { e.stopPropagation(); props.onClose(); }} aria-label="Close preview">✕</button>
+      <img src={props.src} className="fullscreen-img" alt="Full-size receipt" />
+    </div>
+  );
+}
+
+function SettingsModal(props) {
+  var [tempConfig, setTempConfig] = React.useState({...props.config});
+
+  function updateTemp(key, value) {
+    setTempConfig(function(prev) { return mergeForm(prev, {[key]: value}); });
   }
 
-  function reset(){setFile(null);setPreview(null);setOcrText("");setShowOcr(false);setFd({staff:staff,date:"",merchant:"",category:"Food",description:"",total:"",currency:"",payment:""});setStatus("");setStep("capture");}
-  var curOptions=["","CAD","USD","EUR","GBP","AUD","JPY","CHF","Other"];
+  function handleSave() {
+    props.onSave({
+      clientId: tempConfig.clientId.trim(),
+      folderId: extractId(tempConfig.folderId),
+      sheetId: extractId(tempConfig.sheetId)
+    });
+  }
+
+  var fields = [
+    ["OAuth Client ID", "clientId"],
+    ["Drive Folder", "folderId"],
+    ["Spreadsheet", "sheetId"]
+  ];
 
   return (
-    <div style={{minHeight:"100vh",background:"linear-gradient(135deg,#0f172a 0%,#1e3a5f 50%,#0f172a 100%)",display:"flex",alignItems:"center",justifyContent:"center",padding:"1rem"}}>
-      {showStaffPrompt&&(<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:55,display:"flex",alignItems:"center",justifyContent:"center",padding:"1rem"}}><div style={{background:"#fff",borderRadius:"1rem",maxWidth:"24rem",width:"100%",padding:"1.5rem"}}><h2 style={{fontSize:"1.125rem",fontWeight:700,marginBottom:"0.5rem"}}>Welcome!</h2><p style={{fontSize:"0.875rem",color:"#6b7280",marginBottom:"1rem"}}>Enter your name so we know who uploaded each receipt.</p><input value={tmpStaff} onChange={function(e){setTmpStaff(e.target.value);}} placeholder="Your name" style={{width:"100%",border:"1px solid #d1d5db",borderRadius:"0.5rem",padding:"0.5rem 0.75rem",fontSize:"0.875rem",marginBottom:"1rem",outline:"none"}}/><button onClick={function(){if(tmpStaff.trim()){setStaff(tmpStaff.trim());setShowStaffPrompt(false);}}} style={{width:"100%",background:"#2563eb",color:"#fff",border:"none",borderRadius:"0.75rem",padding:"0.75rem",fontWeight:600,cursor:"pointer"}}>Continue</button></div></div>)}
-      {showSettings&&(<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:50,display:"flex",alignItems:"center",justifyContent:"center",padding:"1rem"}}><div style={{background:"#fff",borderRadius:"1rem",maxWidth:"28rem",width:"100%",padding:"1.5rem",maxHeight:"90vh",overflowY:"auto"}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:"1rem"}}><h2 style={{fontSize:"1.125rem",fontWeight:700}}>Settings</h2><button onClick={function(){setShowSettings(false);}} style={{border:"none",background:"none",color:"#9ca3af",fontSize:"1.25rem",cursor:"pointer"}}>X</button></div>
-        {[["Your Name","staff",tmpCfg.staff],["OAuth Client ID","clientId",tmpCfg.clientId],["Drive Folder","folderId",tmpCfg.folderId],["Spreadsheet","sheetId",tmpCfg.sheetId]].map(function(f){return(<div key={f[1]} style={{marginBottom:"1rem"}}><label style={{fontSize:"0.8125rem",fontWeight:500,color:"#374151"}}>{f[0]}</label><input value={f[2]} onChange={function(e){setTmpCfg(function(p){var n={};for(var k in p)n[k]=p[k];n[f[1]]=e.target.value;return n;});}} style={{width:"100%",border:"1px solid #d1d5db",borderRadius:"0.5rem",padding:"0.5rem 0.75rem",fontSize:"0.875rem",marginTop:"0.25rem",outline:"none"}}/></div>);})}
-        <div style={{background:"#fffbeb",border:"1px solid #fde68a",borderRadius:"0.75rem",padding:"0.75rem",marginBottom:"1rem"}}><p style={{fontSize:"0.75rem",color:"#92400e"}}><strong>APIs:</strong> Drive, Sheets, Cloud Vision</p><p style={{fontSize:"0.75rem",color:"#92400e",marginTop:"0.25rem"}}><strong>OAuth origin + redirect:</strong></p><p style={{fontSize:"0.7rem",fontFamily:"monospace",color:"#78350f",background:"#fef3c7",padding:"0.25rem 0.5rem",borderRadius:"0.25rem",marginTop:"0.25rem",wordBreak:"break-all"}}>{window.location.origin+window.location.pathname}</p></div>
-        <button onClick={function(){var nc={clientId:tmpCfg.clientId.trim(),folderId:xid(tmpCfg.folderId),sheetId:xid(tmpCfg.sheetId)};setCfg(nc);if(tmpCfg.staff.trim())setStaff(tmpCfg.staff.trim());setTok(null);setShowSettings(false);setStatus("Settings saved.");}} style={{width:"100%",background:"#2563eb",color:"#fff",border:"none",borderRadius:"0.75rem",padding:"0.75rem",fontWeight:600,cursor:"pointer"}}>Save</button></div></div>)}
+    <div className="overlay overlay-dim" role="dialog" aria-modal="true" aria-label="Settings">
+      <div className="modal">
+        <div className="modal-header">
+          <h2 style={{fontSize:"1.125rem",fontWeight:700,margin:0}}>Settings</h2>
+          <button className="modal-close" onClick={props.onClose} aria-label="Close settings">✕</button>
+        </div>
+        {fields.map(function(f) {
+          return (
+            <div key={f[1]} className="settings-field">
+              <label className="settings-label" htmlFor={"settings-" + f[1]}>{f[0]}</label>
+              <input
+                id={"settings-" + f[1]}
+                className="settings-input"
+                value={tempConfig[f[1]]}
+                onChange={function(e) { updateTemp(f[1], e.target.value); }}
+              />
+            </div>
+          );
+        })}
+        <div className="info-box">
+          <p style={{fontSize:"0.75rem",color:"#92400e",margin:0}}><strong>APIs:</strong> Drive, Sheets, Cloud Vision</p>
+          <p style={{fontSize:"0.7rem",fontFamily:"monospace",color:"#78350f",background:"#fef3c7",padding:"0.25rem 0.5rem",borderRadius:"0.25rem",marginTop:"0.5rem",wordBreak:"break-all"}}>
+            {window.location.origin + window.location.pathname}
+          </p>
+        </div>
+        <button className="btn-primary" onClick={handleSave}>Save</button>
+      </div>
+    </div>
+  );
+}
 
-      <div style={{background:"#fff",borderRadius:"1.5rem",boxShadow:"0 25px 50px rgba(0,0,0,0.25)",maxWidth:"28rem",width:"100%",overflow:"hidden"}}>
-        <div style={{background:"linear-gradient(90deg,#2563eb,#4f46e5)",padding:"1.25rem",color:"#fff"}}>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-            <div style={{display:"flex",alignItems:"center",gap:"0.5rem"}}><span style={{fontSize:"1.5rem"}}>🧾</span><strong style={{fontSize:"1.125rem"}}>Receipt Tracker</strong></div>
-            <button onClick={function(){setTmpCfg({...cfg,staff:staff});setShowSettings(true);}} style={{background:"rgba(255,255,255,0.2)",border:"none",color:"rgba(255,255,255,0.8)",fontSize:"0.75rem",padding:"0.25rem 0.75rem",borderRadius:"0.5rem",cursor:"pointer"}}>Settings</button>
+function SignInScreen(props) {
+  return (
+    <div className="centered-padded">
+      <div style={{fontSize:"3rem",marginBottom:"1rem"}}>🧾</div>
+      <h2 style={{fontSize:"1.25rem",fontWeight:700,marginBottom:"0.5rem"}}>Travel Receipt Tracker</h2>
+      <p className="text-muted text-sm" style={{marginBottom:"1.5rem"}}>Sign in with Google to start.</p>
+      <button className="btn-google" onClick={props.onAuth}>
+        <GoogleIcon />
+        Sign in with Google
+      </button>
+    </div>
+  );
+}
+
+function SessionHistory(props) {
+  if (props.history.length === 0) return null;
+  return (
+    <div style={{marginTop:"1rem"}}>
+      <p style={{fontSize:"0.8125rem",fontWeight:600,color:"#6b7280",marginBottom:"0.5rem"}}>
+        This Session ({props.history.length})
+      </p>
+      <div className="history-list">
+        {props.history.slice().reverse().map(function(entry, i) {
+          return (
+            <div key={i} className="history-item">
+              <div style={{minWidth:0}}>
+                <strong style={{display:"block",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{entry.merchant || "Receipt"}</strong>
+                <span style={{fontSize:"0.7rem",color:"#9ca3af"}}>{entry.date} – {entry.category}</span>
+              </div>
+              <span className="text-success" style={{flexShrink:0,marginLeft:"0.5rem"}}>{entry.currency} {entry.total}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function CaptureScreen(props) {
+  var cameraRef = React.useRef(null);
+  var photoRef = React.useRef(null);
+  var pdfRef = React.useRef(null);
+
+  function handleChange(e) {
+    var f = e.target.files ? e.target.files[0] : null;
+    e.target.value = "";
+    if (f) props.onFile(f);
+  }
+
+  return (
+    <div>
+      {props.staff && (
+        <div className="staff-badge">
+          <span>👤 <strong>{props.staff}</strong></span>
+          <button className="btn-signout" onClick={props.onSignOut}>Sign Out</button>
+        </div>
+      )}
+      <div className="upload-zone">
+        <div className="centered" style={{fontSize:"2.5rem",marginBottom:"0.5rem"}}>🧾</div>
+        <p className="centered" style={{color:"#4b5563",fontWeight:500,marginBottom:"1rem"}}>Add a receipt</p>
+        <div className="upload-buttons">
+          <button className="btn-capture btn-capture-fill" onClick={function() { cameraRef.current.click(); }}>
+            <span style={{fontSize:"1.25rem"}}>📸</span>
+            <div style={{textAlign:"left"}}><div style={{fontSize:"0.875rem"}}>Take Photo</div><div style={{fontSize:"0.7rem",opacity:0.7}}>Camera</div></div>
+          </button>
+          <button className="btn-capture btn-capture-outline" onClick={function() { photoRef.current.click(); }}>
+            <span style={{fontSize:"1.25rem"}}>🖼️</span>
+            <div style={{textAlign:"left"}}><div style={{fontSize:"0.875rem"}}>Choose Image</div><div style={{fontSize:"0.7rem",color:"#9ca3af"}}>Photos library</div></div>
+          </button>
+          <button className="btn-capture btn-capture-outline" onClick={function() { pdfRef.current.click(); }}>
+            <span style={{fontSize:"1.25rem"}}>📄</span>
+            <div style={{textAlign:"left"}}><div style={{fontSize:"0.875rem"}}>Choose PDF</div><div style={{fontSize:"0.7rem",color:"#9ca3af"}}>Files app</div></div>
+          </button>
+        </div>
+      </div>
+      <input ref={cameraRef} type="file" accept="image/*" capture="environment" onChange={handleChange} className="hidden" aria-label="Take a photo" />
+      <input ref={photoRef} type="file" accept="image/*" onChange={handleChange} className="hidden" aria-label="Choose an image" />
+      <input ref={pdfRef} type="file" accept="application/pdf" onChange={handleChange} className="hidden" aria-label="Choose a PDF" />
+      <SessionHistory history={props.history} />
+    </div>
+  );
+}
+
+function ReviewForm(props) {
+  var [showOcr, setShowOcr] = React.useState(false);
+  var [showFull, setShowFull] = React.useState(false);
+
+  var formFields = [
+    ["Staff",       "staff",       "Name"],
+    ["Date",        "date",        "YYYY-MM-DD"],
+    ["Merchant",    "merchant",    "Store name"],
+    ["Description", "description", "Items"],
+    ["Total",       "total",       "e.g. 93.47"],
+    ["Payment",     "payment",     "e.g. Visa ****2046"]
+  ];
+
+  return (
+    <div>
+      {showFull && <FullScreenPreview src={props.fullPreview || props.preview} onClose={function() { setShowFull(false); }} />}
+
+      {props.preview && (
+        <div className="preview-container" onClick={function() { setShowFull(true); }} role="button" tabIndex={0} aria-label="Tap to view full-size receipt">
+          <img src={props.preview} className="preview-thumb" alt="Receipt preview" />
+          <div className="preview-badge">Tap to enlarge</div>
+        </div>
+      )}
+      {!props.preview && props.file && (
+        <div className="preview-pdf">
+          <span style={{fontSize:"1.75rem"}}>📄</span>
+          <div>
+            <p style={{fontWeight:500,fontSize:"0.8125rem",margin:0}}>{props.file.name}</p>
+            <p style={{fontSize:"0.7rem",color:"#9ca3af",margin:0}}>PDF</p>
           </div>
-          {status&&<p style={{fontSize:"0.8125rem",marginTop:"0.5rem",color:"#bfdbfe"}}>{status}</p>}
+        </div>
+      )}
+
+      {props.busy ? (
+        <div className="loading-row">
+          <div className="spinner"></div>
+          <span className="text-muted text-sm">Reading receipt...</span>
+        </div>
+      ) : (
+        <div>
+          <div className="section-header">
+            <h3 className="section-title">Receipt Details</h3>
+            <div style={{display:"flex",alignItems:"center",gap:"0.5rem"}}>
+              {props.formData.date && <span className="month-badge">{getMonthLabel(props.formData.date)}</span>}
+              {props.ocrText && (
+                <button className="btn-link" onClick={function() { setShowOcr(!showOcr); }}>
+                  {showOcr ? "Hide" : "Raw text"}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {showOcr && props.ocrText && <pre className="ocr-text">{props.ocrText}</pre>}
+
+          {formFields.map(function(f) {
+            var fieldId = "receipt-" + f[1];
+            return (
+              <div key={f[1]} className="form-row">
+                <label className="form-label" htmlFor={fieldId}>{f[0]}</label>
+                <input
+                  id={fieldId}
+                  className="form-input"
+                  value={props.formData[f[1]] || ""}
+                  onChange={function(e) { props.onUpdate(f[1], e.target.value); }}
+                  placeholder={f[2]}
+                />
+              </div>
+            );
+          })}
+
+          <div className="form-row">
+            <span className="form-label" id="category-label">Category</span>
+            <div className="pill-group" role="radiogroup" aria-labelledby="category-label">
+              {CATEGORIES.map(function(cat) {
+                var active = props.formData.category === cat;
+                return (
+                  <button
+                    key={cat}
+                    className={"pill" + (active ? " pill-active" : "")}
+                    role="radio"
+                    aria-checked={active}
+                    onClick={function() { props.onUpdate("category", cat); }}
+                  >
+                    {cat}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="form-row">
+            <label className="form-label" htmlFor="receipt-currency">Currency</label>
+            <select
+              id="receipt-currency"
+              className="form-select"
+              value={props.formData.currency}
+              onChange={function(e) { props.onUpdate("currency", e.target.value); }}
+            >
+              {CURRENCY_OPTIONS.map(function(c) {
+                return <option key={c} value={c}>{c || "Select..."}</option>;
+              })}
+            </select>
+          </div>
+
+          <div className="form-actions">
+            <button className="btn-secondary" onClick={props.onCancel}>Cancel</button>
+            <button
+              className="btn-primary"
+              style={{flex:1}}
+              onClick={props.onSave}
+              disabled={props.busy || !props.formData.total}
+            >
+              Save
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DoneScreen(props) {
+  var data = props.formData;
+  return (
+    <div className="centered" style={{padding:"1rem 0"}}>
+      <div style={{fontSize:"3rem",marginBottom:"0.5rem"}}>✅</div>
+      <h2 style={{fontSize:"1.25rem",fontWeight:700}}>Receipt Saved!</h2>
+      <p className="text-muted text-sm">Filed under <strong>{getMonthLabel(data.date)}</strong></p>
+      <div className="success-box">
+        <p className="text-xs"><span className="text-muted">Staff:</span> <strong>{data.staff}</strong></p>
+        <p className="text-xs"><span className="text-muted">Merchant:</span> <strong>{data.merchant}</strong></p>
+        <p className="text-xs"><span className="text-muted">Amount:</span> <strong>{data.currency} {data.total}</strong></p>
+        <p className="text-xs"><span className="text-muted">Category:</span> <strong>{data.category}</strong></p>
+        <p className="text-xs"><span className="text-muted">Payment:</span> <strong>{data.payment || "--"}</strong></p>
+      </div>
+      <button className="btn-primary" style={{marginTop:"1rem"}} onClick={props.onReset}>Scan Another</button>
+    </div>
+  );
+}
+
+/* ── App (Orchestrator) ─────────────────────────────────────────────────── */
+
+function App() {
+  var [config, setConfig] = React.useState({clientId: DEFAULT_CLIENT_ID, folderId: DEFAULT_FOLDER_ID, sheetId: DEFAULT_SHEET_ID});
+  var [staff, setStaff] = React.useState("");
+  var [token, setToken] = React.useState(null);
+  var [tokenExpiry, setTokenExpiry] = React.useState(null);
+  var [tokenWarning, setTokenWarning] = React.useState("");
+  var [step, setStep] = React.useState("loading");
+  var [file, setFile] = React.useState(null);
+  var [preview, setPreview] = React.useState(null);
+  var [fullPreview, setFullPreview] = React.useState(null);
+  var [formData, setFormData] = React.useState({...EMPTY_FORM});
+  var [status, setStatus] = React.useState("");
+  var [busy, setBusy] = React.useState(false);
+  var [history, setHistory] = React.useState([]);
+  var [ocrText, setOcrText] = React.useState("");
+  var [showSettings, setShowSettings] = React.useState(false);
+
+  React.useEffect(function() {
+    if (window.location.hash.indexOf("access_token") >= 0) {
+      var params = new URLSearchParams(window.location.hash.substring(1));
+      var accessToken = params.get("access_token");
+      var expiresIn = parseInt(params.get("expires_in")) || 3600;
+      window.history.replaceState(null, "", window.location.pathname);
+      setToken(accessToken);
+      setTokenExpiry(Date.now() + expiresIn * 1000);
+      setStatus("Signing in...");
+      getUserInfo(accessToken).then(function(name) {
+        setStaff(name);
+        setFormData(function(prev) { return mergeForm(prev, {staff: name}); });
+        setStatus("Welcome, " + name + "!");
+        setStep("capture");
+      });
+    } else {
+      setStep("signin");
+    }
+  }, []);
+
+  React.useEffect(function() {
+    if (!tokenExpiry) return;
+    var interval = setInterval(function() {
+      var remaining = tokenExpiry - Date.now();
+      if (remaining <= 0) {
+        setTokenWarning("Session expired — please sign in again");
+        clearInterval(interval);
+      } else if (remaining <= TOKEN_WARN_MS) {
+        var mins = Math.ceil(remaining / 60000);
+        setTokenWarning("Session expires in " + mins + " min — save your work");
+      }
+    }, 30000);
+    return function() { clearInterval(interval); };
+  }, [tokenExpiry]);
+
+  function authenticate() {
+    var redirect = window.location.origin + window.location.pathname;
+    var scopes = "https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/cloud-vision https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email";
+    window.location.href = "https://accounts.google.com/o/oauth2/v2/auth?client_id=" + encodeURIComponent(config.clientId) + "&redirect_uri=" + encodeURIComponent(redirect) + "&response_type=token&scope=" + encodeURIComponent(scopes) + "&prompt=consent";
+  }
+
+  function updateField(key, value) {
+    setFormData(function(prev) { return mergeForm(prev, {[key]: value}); });
+  }
+
+  function handleFile(f) {
+    if (!token) { authenticate(); return; }
+    setFile(f);
+    setOcrText("");
+    setBusy(true);
+    setStep("review");
+    setStatus("Preparing...");
+    var isPdf = f.type === "application/pdf";
+
+    fileToBase64(f).then(function(dataUrl) {
+      if (!isPdf) {
+        setFullPreview(dataUrl);
+        return resizeImage(dataUrl, 1024).then(function(resized) {
+          setPreview(resized);
+          return resized.split(",")[1];
+        });
+      } else {
+        setPreview(null);
+        setFullPreview(null);
+        return dataUrl.split(",")[1];
+      }
+    })
+    .then(function(base64) {
+      setStatus("Reading receipt...");
+      return visionOCR(token, base64);
+    })
+    .then(function(rawText) {
+      setOcrText(rawText);
+      if (!rawText) {
+        setStatus("No text found.");
+        setFormData(mergeForm(EMPTY_FORM, {staff: staff, date: new Date().toISOString().split("T")[0]}));
+      } else {
+        var parsed = parseReceipt(rawText, staff);
+        setFormData(parsed);
+        setStatus("Receipt analyzed!");
+      }
+      setBusy(false);
+    })
+    .catch(function(err) {
+      setStatus("Error: " + err.message);
+      setFormData(mergeForm(EMPTY_FORM, {staff: staff, date: new Date().toISOString().split("T")[0]}));
+      setBusy(false);
+    });
+  }
+
+  function save() {
+    if (!file || !formData.total) return;
+    if (!token) { authenticate(); return; }
+    setBusy(true);
+    var monthLabel = getMonthLabel(formData.date);
+    setStatus("Creating folders...");
+
+    findOrCreateFolder(token, monthLabel, config.folderId)
+    .then(function(monthFolderId) {
+      return findOrCreateFolder(token, formData.staff || "Unknown", monthFolderId);
+    })
+    .then(function(staffFolderId) {
+      setStatus("Uploading...");
+      var ext = file.type === "application/pdf" ? "pdf" : "jpg";
+      var safeName = (formData.merchant || "receipt").replace(/[^a-zA-Z0-9 ]/g, "").substring(0, 30).trim().replace(/\s+/g, "_");
+      var metadata = {name: safeName + "_" + (formData.date || "unknown") + "_" + Date.now() + "." + ext, parents: [staffFolderId]};
+      var form = new FormData();
+      form.append("metadata", new Blob([JSON.stringify(metadata)], {type: "application/json"}));
+      form.append("file", file);
+      return fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink", {
+        method: "POST",
+        headers: {Authorization: "Bearer " + token},
+        body: form
+      });
+    })
+    .then(function(r) {
+      if (!r.ok) return r.text().then(function(t) { throw new Error(t); });
+      return r.json();
+    })
+    .then(function(driveFile) {
+      var url = driveFile.webViewLink || "https://drive.google.com/file/d/" + driveFile.id + "/view";
+      setStatus("Logging...");
+      return ensureSheet(token, monthLabel, config.sheetId).then(function(tab) {
+        var row = [formData.staff, formData.date, formData.merchant, formData.category, formData.description, formData.total, formData.currency, formData.payment, url, new Date().toISOString()];
+        return fetch("https://sheets.googleapis.com/v4/spreadsheets/" + config.sheetId + "/values/" + encodeURIComponent(tab) + "!A:J:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS", {
+          method: "POST",
+          headers: {Authorization: "Bearer " + token, "Content-Type": "application/json"},
+          body: JSON.stringify({values: [row]})
+        });
+      })
+      .then(function(r) {
+        if (!r.ok) return r.text().then(function(t) { throw new Error(t); });
+        var entry = mergeForm(formData, {driveUrl: url, monthLabel: monthLabel});
+        setHistory(function(prev) { return prev.concat([entry]); });
+        setStatus("Done!");
+        setStep("done");
+        setBusy(false);
+      });
+    })
+    .catch(function(err) {
+      setStatus("Error: " + err.message);
+      setBusy(false);
+    });
+  }
+
+  function reset() {
+    setFile(null);
+    setPreview(null);
+    setFullPreview(null);
+    setOcrText("");
+    setFormData(mergeForm(EMPTY_FORM, {staff: staff}));
+    setStatus("");
+    setStep("capture");
+  }
+
+  function handleSettingsSave(newConfig) {
+    setConfig(newConfig);
+    setToken(null);
+    setTokenExpiry(null);
+    setTokenWarning("");
+    setShowSettings(false);
+    setStep("signin");
+    setStatus("Settings saved.");
+  }
+
+  return (
+    <div className="page">
+      {showSettings && (
+        <SettingsModal
+          config={config}
+          onSave={handleSettingsSave}
+          onClose={function() { setShowSettings(false); }}
+        />
+      )}
+
+      <div className="card">
+        <div className="card-header">
+          <div className="card-header-row">
+            <div className="card-title">
+              <span style={{fontSize:"1.5rem"}}>🧾</span>
+              <strong style={{fontSize:"1.125rem"}}>Receipt Tracker</strong>
+            </div>
+            <button className="btn-settings" onClick={function() { setShowSettings(true); }} aria-label="Open settings">
+              Settings
+            </button>
+          </div>
+          {status && <p className="status-text">{status}</p>}
+          {tokenWarning && <p className="token-warning">{tokenWarning}</p>}
         </div>
 
-        <div style={{padding:"1.5rem"}}>
-          {step==="capture"&&(<div>
-            {staff&&(<div style={{background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:"0.75rem",padding:"0.5rem 0.75rem",display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"1rem",fontSize:"0.875rem"}}><span>👤 <strong>{staff}</strong></span><button onClick={function(){setShowStaffPrompt(true);}} style={{border:"none",background:"none",color:"#2563eb",fontSize:"0.75rem",cursor:"pointer"}}>Change</button></div>)}
-            <div style={{border:"2px dashed #d1d5db",borderRadius:"1rem",padding:"1.5rem"}}>
-              <div style={{textAlign:"center",fontSize:"2.5rem",marginBottom:"0.5rem"}}>🧾</div>
-              <p style={{textAlign:"center",color:"#4b5563",fontWeight:500,marginBottom:"1rem"}}>Add a receipt</p>
-              <div style={{display:"flex",flexDirection:"column",gap:"0.625rem"}}>
-                <button onClick={function(){camRef.current.click();}} style={{display:"flex",alignItems:"center",gap:"0.75rem",width:"100%",background:"#2563eb",color:"#fff",border:"none",borderRadius:"0.75rem",padding:"0.75rem 1rem",fontWeight:600,cursor:"pointer"}}><span style={{fontSize:"1.25rem"}}>📸</span><div style={{textAlign:"left"}}><div style={{fontSize:"0.875rem"}}>Take Photo</div><div style={{fontSize:"0.7rem",opacity:0.7}}>Camera</div></div></button>
-                <button onClick={function(){photoRef.current.click();}} style={{display:"flex",alignItems:"center",gap:"0.75rem",width:"100%",background:"#fff",color:"#374151",border:"2px solid #e5e7eb",borderRadius:"0.75rem",padding:"0.75rem 1rem",fontWeight:600,cursor:"pointer"}}><span style={{fontSize:"1.25rem"}}>🖼️</span><div style={{textAlign:"left"}}><div style={{fontSize:"0.875rem"}}>Choose Image</div><div style={{fontSize:"0.7rem",color:"#9ca3af"}}>Photos library</div></div></button>
-                <button onClick={function(){pdfRef.current.click();}} style={{display:"flex",alignItems:"center",gap:"0.75rem",width:"100%",background:"#fff",color:"#374151",border:"2px solid #e5e7eb",borderRadius:"0.75rem",padding:"0.75rem 1rem",fontWeight:600,cursor:"pointer"}}><span style={{fontSize:"1.25rem"}}>📄</span><div style={{textAlign:"left"}}><div style={{fontSize:"0.875rem"}}>Choose PDF</div><div style={{fontSize:"0.7rem",color:"#9ca3af"}}>Files app</div></div></button>
-              </div>
+        <div className="card-body">
+          {step === "loading" && (
+            <div className="loading-center">
+              <div className="spinner"></div>
+              <span className="text-muted">Loading...</span>
             </div>
-            <input ref={camRef} type="file" accept="image/*" capture="environment" onChange={handleFile} style={{display:"none"}}/>
-            <input ref={photoRef} type="file" accept="image/*" onChange={handleFile} style={{display:"none"}}/>
-            <input ref={pdfRef} type="file" accept="application/pdf" onChange={handleFile} style={{display:"none"}}/>
-            {hist.length>0&&(<div style={{marginTop:"1rem"}}><p style={{fontSize:"0.8125rem",fontWeight:600,color:"#6b7280",marginBottom:"0.5rem"}}>This Session ({hist.length})</p><div style={{display:"flex",flexDirection:"column",gap:"0.5rem",maxHeight:"13rem",overflowY:"auto"}}>{hist.slice().reverse().map(function(h,i){return(<div key={i} style={{display:"flex",alignItems:"center",justifyContent:"space-between",background:"#f9fafb",borderRadius:"0.75rem",padding:"0.625rem 1rem",fontSize:"0.875rem"}}><div style={{minWidth:0}}><strong style={{display:"block",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{h.merchant||"Receipt"}</strong><span style={{fontSize:"0.7rem",color:"#9ca3af"}}>{h.date} - {h.category}</span></div><span style={{fontWeight:600,color:"#15803d",flexShrink:0,marginLeft:"0.5rem"}}>{h.currency} {h.total}</span></div>);})}</div></div>)}
-          </div>)}
+          )}
 
-          {step==="review"&&(<div>
-            {preview&&<div style={{border:"1px solid #e5e7eb",borderRadius:"1rem",overflow:"hidden",maxHeight:"9rem",display:"flex",alignItems:"center",justifyContent:"center",background:"#f9fafb",marginBottom:"0.75rem"}}><img src={preview} style={{maxHeight:"9rem",objectFit:"contain"}}/></div>}
-            {!preview&&file&&<div style={{border:"1px solid #e5e7eb",borderRadius:"1rem",background:"#f9fafb",padding:"1rem",display:"flex",alignItems:"center",justifyContent:"center",gap:"0.75rem",marginBottom:"0.75rem"}}><span style={{fontSize:"1.75rem"}}>📄</span><div><p style={{fontWeight:500,fontSize:"0.8125rem"}}>{file.name}</p><p style={{fontSize:"0.7rem",color:"#9ca3af"}}>PDF</p></div></div>}
-            {processing?(<div style={{display:"flex",alignItems:"center",justifyContent:"center",padding:"1.5rem",gap:"0.75rem"}}><div style={{width:"1.25rem",height:"1.25rem",border:"2px solid #2563eb",borderTopColor:"transparent",borderRadius:"50%",animation:"spin 0.6s linear infinite"}}></div><span style={{color:"#6b7280",fontSize:"0.875rem"}}>Reading receipt...</span></div>):(<div>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"0.5rem"}}>
-                <h3 style={{fontSize:"0.8125rem",fontWeight:600,color:"#6b7280",textTransform:"uppercase",letterSpacing:"0.05em"}}>Receipt Details</h3>
-                <div style={{display:"flex",alignItems:"center",gap:"0.5rem"}}>
-                  {fd.date&&<span style={{fontSize:"0.75rem",background:"#e0e7ff",color:"#4338ca",padding:"0.125rem 0.5rem",borderRadius:"9999px"}}>{getML(fd.date)}</span>}
-                  {ocrText&&<button onClick={function(){setShowOcr(!showOcr);}} style={{fontSize:"0.7rem",color:"#9ca3af",background:"none",border:"none",cursor:"pointer",textDecoration:"underline"}}>{showOcr?"Hide":"Raw text"}</button>}
-                </div>
-              </div>
-              {showOcr&&ocrText&&<pre style={{fontSize:"0.7rem",background:"#f9fafb",border:"1px solid #e5e7eb",borderRadius:"0.5rem",padding:"0.75rem",maxHeight:"8rem",overflow:"auto",whiteSpace:"pre-wrap",color:"#6b7280",fontFamily:"monospace",marginBottom:"0.75rem"}}>{ocrText}</pre>}
-              {[["Staff","staff","Name"],["Date","date","YYYY-MM-DD"],["Merchant","merchant","Store name"],["Description","description","Items"],["Total","total","e.g. 93.47"],["Payment","payment","e.g. Visa ****2046"]].map(function(f){return(<div key={f[1]} style={{display:"flex",alignItems:"center",gap:"0.75rem",marginBottom:"0.625rem"}}><label style={{fontSize:"0.8125rem",color:"#6b7280",width:"5.5rem",flexShrink:0}}>{f[0]}</label><input value={fd[f[1]]||""} onChange={function(e){updateField(f[1],e.target.value);}} placeholder={f[2]} style={{flex:1,border:"1px solid #d1d5db",borderRadius:"0.5rem",padding:"0.5rem 0.75rem",fontSize:"0.875rem",outline:"none"}}/></div>);})}
-              <div style={{display:"flex",alignItems:"center",gap:"0.75rem",marginBottom:"0.625rem"}}><label style={{fontSize:"0.8125rem",color:"#6b7280",width:"5.5rem",flexShrink:0}}>Category</label><div style={{display:"flex",flexWrap:"wrap",gap:"0.375rem",flex:1}}>{CATS.map(function(c){var active=fd.category===c;return<span key={c} onClick={function(){updateField("category",c);}} style={{fontSize:"0.75rem",padding:"0.3rem 0.6rem",borderRadius:"9999px",border:active?"1.5px solid #2563eb":"1.5px solid #d1d5db",background:active?"#2563eb":"#fff",color:active?"#fff":"#4b5563",cursor:"pointer"}}>{c}</span>;})}</div></div>
-              <div style={{display:"flex",alignItems:"center",gap:"0.75rem",marginBottom:"0.625rem"}}><label style={{fontSize:"0.8125rem",color:"#6b7280",width:"5.5rem",flexShrink:0}}>Currency</label><select value={fd.currency} onChange={function(e){updateField("currency",e.target.value);}} style={{flex:1,border:"1px solid #d1d5db",borderRadius:"0.5rem",padding:"0.5rem 0.75rem",fontSize:"0.875rem",outline:"none",background:"#fff"}}>{curOptions.map(function(c){return<option key={c} value={c}>{c||"Select..."}</option>;})}</select></div>
-              <div style={{display:"flex",gap:"0.75rem",marginTop:"0.5rem"}}>
-                <button onClick={reset} style={{flex:1,background:"#fff",color:"#374151",border:"2px solid #e5e7eb",borderRadius:"0.75rem",padding:"0.75rem",fontWeight:600,cursor:"pointer",textAlign:"center"}}>Cancel</button>
-                <button onClick={uploadAndLog} disabled={processing||!fd.total} style={{flex:1,background:fd.total?"#2563eb":"#d1d5db",color:fd.total?"#fff":"#9ca3af",border:"none",borderRadius:"0.75rem",padding:"0.75rem",fontWeight:600,cursor:fd.total?"pointer":"not-allowed",textAlign:"center"}}>Save &amp; Log</button>
-              </div>
-            </div>)}
-          </div>)}
+          {step === "signin" && <SignInScreen onAuth={authenticate} />}
 
-          {step==="done"&&(<div style={{textAlign:"center",padding:"1rem 0"}}>
-            <div style={{fontSize:"3rem",marginBottom:"0.5rem"}}>✅</div>
-            <h2 style={{fontSize:"1.25rem",fontWeight:700}}>Receipt Saved!</h2>
-            <p style={{color:"#6b7280",fontSize:"0.875rem"}}>Filed under <strong>{getML(fd.date)}</strong></p>
-            <div style={{background:"#f0fdf4",borderRadius:"0.75rem",padding:"1rem",textAlign:"left",marginTop:"1rem"}}>
-              <p style={{fontSize:"0.8125rem"}}><span style={{color:"#6b7280"}}>Staff:</span> <strong>{fd.staff}</strong></p>
-              <p style={{fontSize:"0.8125rem"}}><span style={{color:"#6b7280"}}>Merchant:</span> <strong>{fd.merchant}</strong></p>
-              <p style={{fontSize:"0.8125rem"}}><span style={{color:"#6b7280"}}>Amount:</span> <strong>{fd.currency} {fd.total}</strong></p>
-              <p style={{fontSize:"0.8125rem"}}><span style={{color:"#6b7280"}}>Category:</span> <strong>{fd.category}</strong></p>
-              <p style={{fontSize:"0.8125rem"}}><span style={{color:"#6b7280"}}>Payment:</span> <strong>{fd.payment||"--"}</strong></p>
-            </div>
-            <button onClick={reset} style={{marginTop:"1rem",width:"100%",background:"#2563eb",color:"#fff",border:"none",borderRadius:"0.75rem",padding:"0.75rem",fontWeight:600,cursor:"pointer"}}>Scan Another</button>
-          </div>)}
+          {step === "capture" && (
+            <CaptureScreen
+              staff={staff}
+              onFile={handleFile}
+              onSignOut={function() { setToken(null); setStaff(""); setTokenExpiry(null); setTokenWarning(""); setStep("signin"); setStatus(""); }}
+              history={history}
+            />
+          )}
+
+          {step === "review" && (
+            <ReviewForm
+              formData={formData}
+              onUpdate={updateField}
+              preview={preview}
+              fullPreview={fullPreview}
+              file={file}
+              ocrText={ocrText}
+              busy={busy}
+              onSave={save}
+              onCancel={reset}
+            />
+          )}
+
+          {step === "done" && <DoneScreen formData={formData} onReset={reset} />}
         </div>
       </div>
     </div>
   );
 }
 
-ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+ReactDOM.createRoot(document.getElementById("root")).render(
+  <ErrorBoundary><App /></ErrorBoundary>
+);
 </script>
 </body>
 </html>

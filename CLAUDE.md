@@ -2,7 +2,7 @@
 
 ## What this project is
 
-A single-page web app (`index.html`) that lets team members photograph or upload travel receipts on their phone, automatically extract key details via Google Cloud Vision OCR, and save the receipt image to Google Drive with the extracted data logged to a Google Spreadsheet.
+A web app that lets team members photograph or upload travel receipts on their phone, automatically extract key details via Google Cloud Vision OCR, and save the receipt image to Google Drive with the extracted data logged to a Google Spreadsheet.
 
 ## Tech stack
 
@@ -11,6 +11,19 @@ A single-page web app (`index.html`) that lets team members photograph or upload
 - Babel standalone for JSX compilation in the browser
 - All inline — no separate CSS or JS files
 - Hosted on GitHub Pages
+
+## Code structure (within index.html)
+
+The file is organized into clearly separated sections:
+
+1. **`<style>` block** — all CSS classes (layout, buttons, forms, modals, utilities)
+2. **Constants** — config IDs, month names, currency codes, categories, headers
+3. **Utility functions** — `extractId`, `getMonthLabel`, `fileToBase64`, `resizeImage`
+4. **Receipt parsing** — decomposed into `extractMerchant`, `extractDate`, `extractTotal`, `extractCurrency`, `extractPayment`, `extractCategory`, `extractDescription`, composed by `parseReceipt`
+5. **API functions** — `visionOCR`, `getUserInfo`, `findOrCreateFolder`, `ensureSheet`
+6. **ErrorBoundary** — class component wrapping the app for graceful crash recovery
+7. **UI components** — `GoogleIcon`, `FullScreenPreview`, `SettingsModal`, `SignInScreen`, `SessionHistory`, `CaptureScreen`, `ReviewForm`, `DoneScreen`
+8. **App** — thin orchestrator owning state and delegating to components above
 
 ## Google APIs used (all via OAuth2 implicit flow)
 
@@ -59,7 +72,7 @@ Each monthly tab (e.g. "March 2026") is auto-created with these column headers:
 
 ## Receipt parsing logic
 
-The `parseReceipt()` function extracts data from OCR text:
+`parseReceipt()` composes individual extraction functions from OCR text:
 
 - **Merchant**: first meaningful line, skipping noise words (receipt, cardholder, server, etc.)
 - **Date**: supports YYYY-MM-DD, MM/DD/YYYY, DD-Mon-YYYY, M/D/YY formats
@@ -86,7 +99,7 @@ Food, Travel, Hotel, Entertainment, Other
 
 - OCR parser sometimes misses handwritten totals (tip amounts)
 - Date parsing can fail on unusual receipt formats
-- Token expires after ~1 hour, user must re-authenticate
+- Token expires after ~1 hour with a 10-minute countdown warning; user must re-authenticate
 - No offline support
 - No batch upload (one receipt at a time)
 - Description field sometimes pulls irrelevant lines from OCR
@@ -101,13 +114,15 @@ Food, Travel, Hotel, Entertainment, Other
 ## Git workflow
 
 - `main` branch deploys automatically to GitHub Pages
-- Single file project — just edit `index.html` and push
 - No build step required
 
 ## When making changes
 
-- Use ES5-compatible syntax inside the Babel script block (var, function, .then() — avoid async/await)
+- Use ES5-compatible syntax inside the Babel script block (var, function, .then() — avoid async/await). Exception: `class` is fine for React class components (ErrorBoundary)
 - Test that JSX compiles correctly in the browser
 - Don't introduce external dependencies beyond what's already loaded from cdnjs
 - Preserve the existing Google API integration and OAuth flow
 - Always maintain mobile-first responsive design
+- Use CSS classes from the `<style>` block rather than inline styles for static layout
+- Keep components focused — each component in its own clearly named function
+- Parsing functions are individually named (`extractMerchant`, `extractDate`, etc.) — keep them separate rather than merging back into one function
