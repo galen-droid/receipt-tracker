@@ -105,7 +105,6 @@ body {
 
 var DEFAULT_CLIENT_ID = "186804789210-t6r2g6had74t7ven14nlt1pi7hl14onr.apps.googleusercontent.com";
 var DEFAULT_FOLDER_ID = "1IX1tvkckzHuyLx4OWK26RtpF_qAyyV9o";
-var DEFAULT_SHEET_ID = "1gyG6r2Mp2y402G9IU6oJ7a9BLVQAzeVRm9OpA83apmg";
 var MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 var CURRENCY_CODES = ["CAD","USD","EUR","GBP","AUD","NZD","JPY","CNY","HKD","SGD","CHF","SEK","NOK","DKK","INR","KRW","THB","MXN","BRL","ZAR"];
 var CATEGORIES = ["Food","Travel","Hotel","Entertainment","Other"];
@@ -448,32 +447,28 @@ function findOrCreateFolder(token, name, parentId) {
   });
 }
 
-function ensureSheet(token, tabName, sheetId) {
-  return fetch("https://sheets.googleapis.com/v4/spreadsheets/" + sheetId + "?fields=sheets.properties", {
+function findOrCreateSpreadsheet(token, name, parentFolderId) {
+  var query = "mimeType='application/vnd.google-apps.spreadsheet' and '" + parentFolderId + "' in parents and trashed=false";
+  return fetch("https://www.googleapis.com/drive/v3/files?q=" + encodeURIComponent(query) + "&fields=files(id)", {
     headers: {Authorization: "Bearer " + token}
   })
   .then(function(r) { return r.json(); })
-  .then(function(meta) {
-    var found = false;
-    if (meta.sheets) {
-      for (var i = 0; i < meta.sheets.length; i++) {
-        if (meta.sheets[i].properties.title === tabName) { found = true; break; }
-      }
-    }
-    if (found) return tabName;
-    return fetch("https://sheets.googleapis.com/v4/spreadsheets/" + sheetId + ":batchUpdate", {
+  .then(function(data) {
+    if (data.files && data.files.length > 0) return data.files[0].id;
+    return fetch("https://www.googleapis.com/drive/v3/files", {
       method: "POST",
       headers: {Authorization: "Bearer " + token, "Content-Type": "application/json"},
-      body: JSON.stringify({requests: [{addSheet: {properties: {title: tabName}}}]})
+      body: JSON.stringify({name: name, mimeType: "application/vnd.google-apps.spreadsheet", parents: [parentFolderId]})
     })
-    .then(function() {
-      return fetch("https://sheets.googleapis.com/v4/spreadsheets/" + sheetId + "/values/" + encodeURIComponent(tabName) + "!A1:J1?valueInputOption=USER_ENTERED", {
+    .then(function(r) { return r.json(); })
+    .then(function(created) {
+      return fetch("https://sheets.googleapis.com/v4/spreadsheets/" + created.id + "/values/Sheet1!A1:J1?valueInputOption=USER_ENTERED", {
         method: "PUT",
         headers: {Authorization: "Bearer " + token, "Content-Type": "application/json"},
         body: JSON.stringify({values: [SHEET_HEADERS]})
-      });
-    })
-    .then(function() { return tabName; });
+      })
+      .then(function() { return created.id; });
+    });
   });
 }
 
@@ -535,15 +530,13 @@ function SettingsModal(props) {
   function handleSave() {
     props.onSave({
       clientId: tempConfig.clientId.trim(),
-      folderId: extractId(tempConfig.folderId),
-      sheetId: extractId(tempConfig.sheetId)
+      folderId: extractId(tempConfig.folderId)
     });
   }
 
   var fields = [
     ["OAuth Client ID", "clientId"],
-    ["Drive Folder", "folderId"],
-    ["Spreadsheet", "sheetId"]
+    ["Drive Folder", "folderId"]
   ];
 
   return (
@@ -654,7 +647,7 @@ function CaptureScreen(props) {
         </div>
       </div>
       <input ref={cameraRef} type="file" accept="image/*" capture="environment" onChange={handleChange} className="hidden" aria-label="Take a photo" />
-      <input ref={photoRef} type="file" accept="image/*" onChange={handleChange} className="hidden" aria-label="Choose an image" />
+      <input ref={photoRef} type="file" accept="image/png,image/jpeg,image/heic,image/heif,image/gif,image/webp" onChange={handleChange} className="hidden" aria-label="Choose an image" />
       <input ref={pdfRef} type="file" accept="application/pdf" onChange={handleChange} className="hidden" aria-label="Choose a PDF" />
       <SessionHistory history={props.history} />
     </div>
@@ -804,7 +797,7 @@ function DoneScreen(props) {
 /* ── App (Orchestrator) ─────────────────────────────────────────────────── */
 
 function App() {
-  var [config, setConfig] = React.useState({clientId: DEFAULT_CLIENT_ID, folderId: DEFAULT_FOLDER_ID, sheetId: DEFAULT_SHEET_ID});
+  var [config, setConfig] = React.useState({clientId: DEFAULT_CLIENT_ID, folderId: DEFAULT_FOLDER_ID});
   var [staff, setStaff] = React.useState("");
   var [token, setToken] = React.useState(null);
   var [tokenExpiry, setTokenExpiry] = React.useState(null);
@@ -917,11 +910,14 @@ function App() {
     var monthLabel = getMonthLabel(formData.date);
     setStatus("Creating folders...");
 
+    var savedStaffFolderId;
+
     findOrCreateFolder(token, monthLabel, config.folderId)
     .then(function(monthFolderId) {
       return findOrCreateFolder(token, formData.staff || "Unknown", monthFolderId);
     })
     .then(function(staffFolderId) {
+      savedStaffFolderId = staffFolderId;
       setStatus("Uploading...");
       var ext = file.type === "application/pdf" ? "pdf" : "jpg";
       var safeName = (formData.merchant || "receipt").replace(/[^a-zA-Z0-9 ]/g, "").substring(0, 30).trim().replace(/\s+/g, "_");
@@ -942,9 +938,11 @@ function App() {
     .then(function(driveFile) {
       var url = driveFile.webViewLink || "https://drive.google.com/file/d/" + driveFile.id + "/view";
       setStatus("Logging...");
-      return ensureSheet(token, monthLabel, config.sheetId).then(function(tab) {
+      var staffName = formData.staff || "Unknown";
+      return findOrCreateSpreadsheet(token, staffName + " \u2013 " + monthLabel, savedStaffFolderId)
+      .then(function(sheetId) {
         var row = [formData.staff, formData.date, formData.merchant, formData.category, formData.description, formData.total, formData.currency, formData.payment, url, new Date().toISOString()];
-        return fetch("https://sheets.googleapis.com/v4/spreadsheets/" + config.sheetId + "/values/" + encodeURIComponent(tab) + "!A:J:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS", {
+        return fetch("https://sheets.googleapis.com/v4/spreadsheets/" + sheetId + "/values/Sheet1!A:J:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS", {
           method: "POST",
           headers: {Authorization: "Bearer " + token, "Content-Type": "application/json"},
           body: JSON.stringify({values: [row]})
