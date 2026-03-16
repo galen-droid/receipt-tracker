@@ -16,7 +16,7 @@ body {
   min-height: 100vh;
 }
 
-.page { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+.page { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1rem; }
 .card { background: #fff; border-radius: 1.5rem; box-shadow: 0 25px 50px rgba(0,0,0,0.25); max-width: 28rem; width: 100%; overflow: hidden; }
 .card-header { background: linear-gradient(90deg, #2563eb, #4f46e5); padding: 1.25rem; color: #fff; }
 .card-header-row { display: flex; align-items: center; justify-content: space-between; }
@@ -113,7 +113,7 @@ var SHEET_HEADERS = ["Staff","Date","Merchant","Category","Description","Total",
 var CURRENCY_OPTIONS = ["","CAD","USD","EUR","GBP","AUD","JPY","CHF","Other"];
 var TOKEN_WARN_MS = 10 * 60 * 1000;
 
-var APP_VERSION = "0.5.0";
+var APP_VERSION = "0.5.1";
 var EMPTY_FORM = {staff:"",date:"",merchant:"",category:"Food",description:"",total:"",currency:"",payment:""};
 
 /* ── Utility Functions ──────────────────────────────────────────────────── */
