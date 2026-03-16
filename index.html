@@ -1,166 +1,50 @@
-<!DOCTYPE html>
+import { useState, useRef } from "react";
 
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Receipt Tracker</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.js"></script>
-<style>
-  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0f172a 100%); min-height: 100vh; }
-  .card { background: #fff; border-radius: 1.5rem; box-shadow: 0 25px 50px rgba(0,0,0,0.25); max-width: 28rem; width: 100%; overflow: hidden; }
-  .header { background: linear-gradient(90deg, #2563eb, #4f46e5); padding: 1.25rem; color: #fff; }
-  .btn { border: none; border-radius: 0.75rem; padding: 0.75rem 1rem; font-weight: 600; font-size: 0.875rem; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 0.75rem; width: 100%; }
-  .btn-primary { background: #2563eb; color: #fff; }
-  .btn-primary:hover { background: #1d4ed8; }
-  .btn-primary:disabled { background: #d1d5db; cursor: not-allowed; }
-  .btn-outline { background: #fff; color: #374151; border: 2px solid #e5e7eb; }
-  .btn-outline:hover { border-color: #60a5fa; background: #eff6ff; }
-  .input { width: 100%; border: 1px solid #d1d5db; border-radius: 0.5rem; padding: 0.5rem 0.75rem; font-size: 0.875rem; outline: none; }
-  .input:focus { box-shadow: 0 0 0 2px #3b82f6; border-color: transparent; }
-  .badge { font-size: 0.75rem; background: #e0e7ff; color: #4338ca; padding: 0.125rem 0.5rem; border-radius: 9999px; }
-  .spinner { width: 1.25rem; height: 1.25rem; border: 2px solid #2563eb; border-top-color: transparent; border-radius: 50%; animation: spin 0.6s linear infinite; }
-  .spinner-white { border-color: #fff; border-top-color: transparent; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .hidden { display: none !important; }
-  .receipt-item { display: flex; align-items: center; justify-content: space-between; background: #f9fafb; border-radius: 0.75rem; padding: 0.625rem 1rem; font-size: 0.875rem; }
-  .field-row { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; }
-  .field-label { font-size: 0.875rem; color: #6b7280; width: 6rem; flex-shrink: 0; }
-  .ocr-box { font-size: 0.75rem; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 0.5rem; padding: 0.75rem; max-height: 8rem; overflow: auto; white-space: pre-wrap; color: #6b7280; font-family: monospace; }
-  .tip-box { background: #fffbeb; border: 1px solid #fde68a; border-radius: 0.75rem; padding: 0.75rem; }
-  .success-box { background: #f0fdf4; border-radius: 0.75rem; padding: 1rem; text-align: left; }
-</style>
-</head>
-<body>
-<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:1rem;">
-<div class="card" id="app">
+var DEF_CID = "186804789210-t6r2g6had74t7ven14nlt1pi7hl14onr.apps.googleusercontent.com";
+var DEF_FID = "1IX1tvkckzHuyLx4OWK26RtpF_qAyyV9o";
+var DEF_SID = "1gyG6r2Mp2y402G9IU6oJ7a9BLVQAzeVRm9OpA83apmg";
+var MO = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+var CCODES = ["CAD","USD","EUR","GBP","AUD","NZD","JPY","CNY","HKD","SGD","CHF","SEK","NOK","DKK","INR","KRW","THB","MXN","BRL","ZAR"];
+var CATS = ["Food","Travel","Hotel","Entertainment","Other"];
+var HDRS = ["Staff","Date","Merchant","Category","Description","Total","Currency","Payment","Drive URL","Logged At"];
 
-  <!-- HEADER -->
-
-  <div class="header">
-    <div style="display:flex;align-items:center;justify-content:space-between;">
-      <div style="display:flex;align-items:center;gap:0.5rem;">
-        <span style="font-size:1.5rem;">🧾</span>
-        <strong style="font-size:1.125rem;">Receipt Tracker</strong>
-      </div>
-      <button onclick="showSettings()" style="background:rgba(255,255,255,0.2);border:none;color:rgba(255,255,255,0.8);font-size:0.75rem;padding:0.25rem 0.75rem;border-radius:0.5rem;cursor:pointer;">⚙ Settings</button>
-    </div>
-    <p id="statusBar" style="font-size:0.875rem;margin-top:0.5rem;color:#bfdbfe;display:none;"></p>
-  </div>
-
-  <div style="padding:1.5rem;" id="content">
-    <!-- Screens injected by JS -->
-  </div>
-
-</div>
-</div>
-
-<!-- SETTINGS MODAL -->
-
-<div id="settingsModal" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:50;display:flex;align-items:center;justify-content:center;padding:1rem;">
-  <div style="background:#fff;border-radius:1rem;max-width:28rem;width:100%;padding:1.5rem;box-shadow:0 25px 50px rgba(0,0,0,0.25);">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
-      <h2 style="font-size:1.125rem;font-weight:700;">Settings</h2>
-      <button onclick="hideSettings()" style="border:none;background:none;color:#9ca3af;font-size:1.25rem;cursor:pointer;">✕</button>
-    </div>
-    <div style="margin-bottom:1rem;">
-      <label style="font-size:0.875rem;font-weight:500;color:#374151;">OAuth Client ID</label>
-      <input id="cfgClientId" class="input" style="margin-top:0.25rem;">
-    </div>
-    <div style="margin-bottom:1rem;">
-      <label style="font-size:0.875rem;font-weight:500;color:#374151;">Drive Folder (URL or ID)</label>
-      <input id="cfgFolder" class="input" style="margin-top:0.25rem;">
-    </div>
-    <div style="margin-bottom:1rem;">
-      <label style="font-size:0.875rem;font-weight:500;color:#374151;">Spreadsheet (URL or ID)</label>
-      <input id="cfgSheet" class="input" style="margin-top:0.25rem;">
-    </div>
-    <div class="tip-box" style="margin-bottom:1rem;">
-      <p style="font-size:0.75rem;color:#92400e;"><strong>Required APIs:</strong> Google Drive, Google Sheets, Cloud Vision</p>
-      <p style="font-size:0.75rem;color:#92400e;margin-top:0.25rem;"><strong>OAuth origins/redirects — add:</strong></p>
-      <p id="originDisplay" style="font-size:0.75rem;font-family:monospace;color:#78350f;background:#fef3c7;padding:0.25rem 0.5rem;border-radius:0.25rem;margin-top:0.25rem;word-break:break-all;"></p>
-    </div>
-    <button onclick="saveSettings()" class="btn btn-primary" style="justify-content:center;">Save Settings</button>
-  </div>
-</div>
-
-<!-- SETUP GUIDE MODAL -->
-
-<div id="setupModal" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:60;display:flex;align-items:center;justify-content:center;padding:1rem;">
-  <div style="background:#fff;border-radius:1rem;max-width:28rem;width:100%;max-height:90vh;overflow-y:auto;padding:1.5rem;">
-    <h2 style="font-size:1.25rem;font-weight:700;margin-bottom:1rem;">Setup Guide</h2>
-    <div style="font-size:0.875rem;color:#4b5563;line-height:1.6;">
-      <p><strong>1.</strong> Go to <code>console.cloud.google.com</code> → create/select a project</p>
-      <p style="margin-top:0.75rem;"><strong>2.</strong> Enable 3 APIs: <strong>Google Drive API</strong>, <strong>Google Sheets API</strong>, <strong>Cloud Vision API</strong></p>
-      <p style="margin-top:0.75rem;"><strong>3.</strong> Go to Credentials → Create OAuth client ID (Web app)</p>
-      <p style="margin-top:0.75rem;"><strong>4.</strong> Add your hosting URL to both Authorized JavaScript Origins and Redirect URIs</p>
-      <p style="margin-top:0.75rem;"><strong>5.</strong> Set up OAuth Consent Screen → add team emails as test users</p>
-      <p style="margin-top:0.75rem;"><strong>6.</strong> Copy the Client ID into Settings in this app</p>
-    </div>
-    <button onclick="document.getElementById('setupModal').classList.add('hidden')" class="btn btn-primary" style="margin-top:1.5rem;justify-content:center;">Got it</button>
-  </div>
-</div>
-
-<script>
-// ============ CONFIG ============
-const DEFAULTS = {
-  clientId: "186804789210-t6r2g6had74t7ven14nlt1pi7hl14onr.apps.googleusercontent.com",
-  folderId: "1IX1tvkckzHuyLx4OWK26RtpF_qAyyV9o",
-  spreadsheetId: "1gyG6r2Mp2y402G9IU6oJ7a9BLVQAzeVRm9OpA83apmg"
-};
-const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-const CURR_CODES = ["CAD","USD","EUR","GBP","AUD","NZD","JPY","CNY","HKD","SGD","CHF","SEK","NOK","DKK","INR","KRW","THB","MXN","BRL","ZAR","AED","PHP","MYR","IDR"];
-const CURR_SYMS = {"$":"USD","€":"EUR","£":"GBP","¥":"JPY","₹":"INR","₩":"KRW"};
-
-let config = { ...DEFAULTS };
-let accessToken = null;
-let currentFile = null;
-let currentPreview = null;
-let formData = { merchant:"", date:"", total:"", currency:"", description:"" };
-let history = [];
-let ocrText = "";
-
-// ============ UTILS ============
-function extractId(input) {
-  if (!input) return "";
-  let m = input.match(/folders\/([a-zA-Z0-9_-]+)/); if (m) return m[1];
-  m = input.match(/spreadsheets\/d\/([a-zA-Z0-9_-]+)/); if (m) return m[1];
-  return input.trim();
+function xid(v) {
+  if (!v) return "";
+  var m = v.match(/folders\/([a-zA-Z0-9_-]+)/);
+  if (m) return m[1];
+  m = v.match(/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+  if (m) return m[1];
+  return v.trim();
 }
 
-function getMonthLabel(dateStr) {
-  let d;
-  if (dateStr && /^\d{4}-\d{2}/.test(dateStr)) {
-    const [y, m] = dateStr.split("-");
-    d = new Date(parseInt(y), parseInt(m)-1, 1);
-  } else d = new Date();
-  return MONTHS[d.getMonth()] + " " + d.getFullYear();
+function getML(ds) {
+  var d;
+  if (ds && ds.match(/^\d{4}-\d{2}/)) {
+    var p = ds.split("-");
+    d = new Date(parseInt(p[0]), parseInt(p[1]) - 1, 1);
+  } else {
+    d = new Date();
+  }
+  return MO[d.getMonth()] + " " + d.getFullYear();
 }
 
-function setStatus(msg) {
-  const el = document.getElementById("statusBar");
-  if (msg) { el.textContent = msg; el.style.display = "block"; }
-  else el.style.display = "none";
-}
-
-function fileToBase64(file) {
-  return new Promise((res, rej) => {
-    const r = new FileReader();
-    r.onload = () => res(r.result);
-    r.onerror = () => rej(new Error("Read failed"));
-    r.readAsDataURL(file);
+function fileToB64(f) {
+  return new Promise(function(res, rej) {
+    var r = new FileReader();
+    r.onload = function() { res(r.result); };
+    r.onerror = function() { rej(new Error("read fail")); };
+    r.readAsDataURL(f);
   });
 }
 
-function resizeImage(dataUrl, maxDim) {
-  return new Promise(res => {
-    const img = new Image();
-    img.onload = () => {
-      let w = img.width, h = img.height;
-      const s = maxDim / Math.max(w, h);
-      if (s < 1) { w = Math.round(w*s); h = Math.round(h*s); }
-      const c = document.createElement("canvas");
+function resizeImg(dataUrl, maxDim) {
+  return new Promise(function(res) {
+    var img = new Image();
+    img.onload = function() {
+      var w = img.width, h = img.height;
+      var s = maxDim / Math.max(w, h);
+      if (s < 1) { w = Math.round(w * s); h = Math.round(h * s); }
+      var c = document.createElement("canvas");
       c.width = w; c.height = h;
       c.getContext("2d").drawImage(img, 0, 0, w, h);
       res(c.toDataURL("image/jpeg", 0.85));
@@ -169,363 +53,455 @@ function resizeImage(dataUrl, maxDim) {
   });
 }
 
-// ============ RECEIPT PARSER ============
-function parseReceipt(text) {
-  const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
-  const upper = text.toUpperCase();
-  const r = { merchant:"", date:"", total:"", currency:"", description:"" };
+function parseReceipt(text, staffName) {
+  var lines = text.split("\n").map(function(l) { return l.trim(); }).filter(Boolean);
+  var up = text.toUpperCase();
+  var r = { staff: staffName, date: "", merchant: "", category: "Food", description: "", total: "", currency: "", payment: "" };
 
-  // Merchant
-  const skip = ["receipt","cardholder","copy","tax invoice","terminal","duplicate"];
-  for (let i = 0; i < Math.min(lines.length, 5); i++) {
-    const l = lines[i];
-    if (l.length < 2 || skip.some(w => l.toLowerCase().includes(w))) continue;
-    if (/^[\d\-\/\.\:\s]+$/.test(l) || /^(tel|phone|fax|www|http|abn|gst)/i.test(l)) continue;
-    r.merchant = l.replace(/[*#=\-]+/g,"").trim();
+  var skipW = ["receipt","cardholder","copy","tax invoice","terminal","duplicate","server","cashier","transaction","order","table","guest","station","ticket","dine"];
+  for (var i = 0; i < Math.min(lines.length, 6); i++) {
+    var ln = lines[i].replace(/[*#=]+/g, "").trim();
+    if (ln.length < 2) continue;
+    var skip = false;
+    for (var si = 0; si < skipW.length; si++) { if (ln.toLowerCase().indexOf(skipW[si]) >= 0) { skip = true; break; } }
+    if (skip) continue;
+    if (ln.match(/^[\d\-\/\.\:\s]+$/)) continue;
+    if (ln.match(/^(tel|phone|fax|www|http|abn|gst|mid|aid|tid)/i)) continue;
+    if (ln.match(/^\(?\d{3}\)?[\s\-]?\d{3}[\s\-]?\d{4}$/)) continue;
+    r.merchant = ln;
     break;
   }
 
-  // Date
-  const dp = [
-    [/(\d{4})[\-\/\.](\d{2})[\-\/\.](\d{2})/, (m)=>[m[1],m[2],m[3]]],
-    [/(\d{2})[\-\/\.](\d{2})[\-\/\.](\d{4})/, (m)=>{ const a=+m[1],b=+m[2]; return a>12?[m[3],String(b).padStart(2,"0"),m[1]]:[m[3],m[1],String(b).padStart(2,"0")]; }],
-    [/(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*[\s,]+(\d{4})/i, (m)=>{ const mm={jan:"01",feb:"02",mar:"03",apr:"04",may:"05",jun:"06",jul:"07",aug:"08",sep:"09",oct:"10",nov:"11",dec:"12"}; return [m[3],mm[m[2].substring(0,3).toLowerCase()],String(m[1]).padStart(2,"0")]; }],
-    [/(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*\s+(\d{1,2})[\s,]+(\d{4})/i, (m)=>{ const mm={jan:"01",feb:"02",mar:"03",apr:"04",may:"05",jun:"06",jul:"07",aug:"08",sep:"09",oct:"10",nov:"11",dec:"12"}; return [m[3],mm[m[1].substring(0,3).toLowerCase()],String(m[2]).padStart(2,"0")]; }]
-  ];
-  for (const line of lines) {
-    for (const [pat, extract] of dp) {
-      const m = line.match(pat);
-      if (m) { const [y,mo,dy] = extract(m); r.date = `${y}-${mo}-${dy}`; break; }
-    }
-    if (r.date) break;
+  var mmap = { jan: "01", feb: "02", mar: "03", apr: "04", may: "05", jun: "06", jul: "07", aug: "08", sep: "09", oct: "10", nov: "11", dec: "12" };
+  for (i = 0; i < lines.length; i++) {
+    var L = lines[i];
+    var dm;
+    dm = L.match(/(\d{4})[\-\/\.](\d{1,2})[\-\/\.](\d{1,2})/);
+    if (dm) { r.date = dm[1] + "-" + ("0" + dm[2]).slice(-2) + "-" + ("0" + dm[3]).slice(-2); break; }
+    dm = L.match(/(\d{1,2})[\-\s]+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*[\-\s,]+(\d{4})/i);
+    if (dm) { r.date = dm[3] + "-" + mmap[dm[2].substring(0, 3).toLowerCase()] + "-" + ("0" + dm[1]).slice(-2); break; }
+    dm = L.match(/(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*[\s\-]+(\d{1,2})[\s,\-]+(\d{4})/i);
+    if (dm) { r.date = dm[3] + "-" + mmap[dm[1].substring(0, 3).toLowerCase()] + "-" + ("0" + dm[2]).slice(-2); break; }
+    dm = L.match(/(\d{1,2})[\-\/](\d{1,2})[\-\/](\d{4})/);
+    if (dm) { var a = parseInt(dm[1]), b = parseInt(dm[2]); if (a > 12) r.date = dm[3] + "-" + ("0" + b).slice(-2) + "-" + ("0" + a).slice(-2); else r.date = dm[3] + "-" + ("0" + a).slice(-2) + "-" + ("0" + b).slice(-2); break; }
+    dm = L.match(/(\d{1,2})\/(\d{1,2})\/(\d{2})(?!\d)/);
+    if (dm) { var y2 = "20" + dm[3]; a = parseInt(dm[1]); b = parseInt(dm[2]); if (a > 12) r.date = y2 + "-" + ("0" + b).slice(-2) + "-" + ("0" + a).slice(-2); else r.date = y2 + "-" + ("0" + a).slice(-2) + "-" + ("0" + b).slice(-2); break; }
   }
 
-  // Currency
-  for (const code of CURR_CODES) { if (upper.includes(code)) { r.currency = code; break; } }
-  if (!r.currency) { for (const [sym, code] of Object.entries(CURR_SYMS)) { if (text.includes(sym)) { r.currency = code; break; } } }
+  for (i = 0; i < CCODES.length; i++) { if (up.indexOf(CCODES[i]) >= 0) { r.currency = CCODES[i]; break; } }
+  if (!r.currency && text.indexOf("$") >= 0) r.currency = "USD";
 
-  // Total
-  const tp = [
-    /balance\s*due[:\s]*[\$€£¥]?\s*([\d,]+\.?\d*)/gi,
-    /(?:grand|net)\s*total[:\s]*[\$€£¥]?\s*([\d,]+\.?\d*)/gi,
-    /\btotal[:\s]*[\$€£¥]?\s*(?:CAD|USD|EUR|GBP|AUD)?\s*([\d,]+\.?\d*)/gi
-  ];
-  let totals = [];
-  for (const pat of tp) {
-    let m; pat.lastIndex = 0;
-    while ((m = pat.exec(text)) !== null) {
-      const v = parseFloat(m[1].replace(/,/g,""));
-      if (!isNaN(v) && v > 0) totals.push(v);
-    }
-  }
-  if (totals.length > 0) r.total = Math.max(...totals).toFixed(2);
+  var tots = [];
+  var tpats = [/balance\s*due[\s:]*\$?\s*([\d,]+\.\d{2})/gi, /grand\s*total[\s:]*\$?\s*(?:CAD|USD|EUR|GBP)?\s*([\d,]+\.\d{2})/gi, /\btotal[\s:]*\$?\s*(?:CAD|USD|EUR|GBP)?\s*([\d,]+\.\d{2})/gi];
+  for (i = 0; i < tpats.length; i++) { var re = tpats[i]; var tm; while ((tm = re.exec(text)) !== null) { var v = parseFloat(tm[1].replace(/,/g, "")); if (!isNaN(v) && v > 0) tots.push(v); } }
+  var subpat = /sub\s*total[\s:]*\$?\s*([\d,]+\.\d{2})/gi;
+  var subs = []; var sm;
+  while ((sm = subpat.exec(text)) !== null) { subs.push(parseFloat(sm[1].replace(/,/g, ""))); }
+  var filtered = tots.filter(function(t) { for (var j = 0; j < subs.length; j++) { if (Math.abs(t - subs[j]) < 0.01) return false; } return true; });
+  if (filtered.length > 0) r.total = Math.max.apply(null, filtered).toFixed(2);
+  else if (tots.length > 0) r.total = Math.max.apply(null, tots).toFixed(2);
 
-  // Description
-  const items = [];
-  for (const line of lines) {
-    if (/\d+\.\d{2}/.test(line) && !/total|subtotal|tax|balance|change|tendered|visa|master|debit|credit|payment|cash/i.test(line)) {
-      const c = line.replace(/[\d\s\.\$€£¥,]+$/g,"").trim();
-      if (c.length > 1 && c.length < 50) items.push(c);
+  var cpats = [/visa\s*(?:prepaid\s*)?(?:\S*?)(\d{4})/i, /mastercard\s*(?:\S*?)(\d{4})/i, /amex\s*(?:\S*?)(\d{4})/i, /x{4,}(\d{4})/i, /\*{4,}(\d{4})/i];
+  for (i = 0; i < lines.length; i++) {
+    for (var ci = 0; ci < cpats.length; ci++) {
+      var cm = lines[i].match(cpats[ci]);
+      if (cm) {
+        var ctype = "Card";
+        if (lines[i].match(/visa/i)) ctype = "Visa";
+        else if (lines[i].match(/master/i)) ctype = "Mastercard";
+        else if (lines[i].match(/amex/i)) ctype = "Amex";
+        r.payment = ctype + " ****" + cm[1];
+        break;
+      }
     }
+    if (r.payment) break;
   }
-  r.description = items.slice(0,4).join(", ");
+  if (!r.payment && text.match(/\bcash\b/i) && !text.match(/cash\s*back/i)) r.payment = "Cash";
+  else if (!r.payment && text.match(/\bdebit\b/i)) r.payment = "Debit";
+
+  var dskip = /total|subtotal|sub total|tax|balance|change|tendered|visa|master|debit|credit|payment|cash|gratuity|tip|method|contactless|chip|pin|auth|ref|clover|cardholder|signature|retain|copy|ticket|order|table|guest|server|cashier|station|transaction|gst|pst|hst/i;
+  var items = [];
+  for (i = 0; i < lines.length; i++) {
+    if (!lines[i].match(/\d+\.\d{2}/)) continue;
+    if (dskip.test(lines[i])) continue;
+    var cd = lines[i].replace(/\$?\s*[\d,]+\.\d{2}\s*$/, "").trim().replace(/^\d+\s*[xX]?\s+/, "").trim();
+    if (cd.length > 1 && cd.length < 60 && !cd.match(/^[\d\s\.\-\*]+$/)) items.push(cd);
+  }
+  r.description = items.slice(0, 5).join(", ");
+
+  var lt = text.toLowerCase();
+  if (lt.match(/hotel|inn|suite|resort|motel|lodge|airbnb/)) r.category = "Hotel";
+  else if (lt.match(/uber|lyft|taxi|airline|flight|airport|parking|fuel|petrol/)) r.category = "Travel";
+  else if (lt.match(/cinema|movie|theatre|theater|concert|museum|gallery/)) r.category = "Entertainment";
+
   return r;
 }
 
-// ============ GOOGLE AUTH (redirect flow — mobile friendly) ============
-function doAuth() {
-  // Save current state so we can resume after redirect
-  try {
-    sessionStorage.setItem("rt_pending", "1");
-    if (currentFile) sessionStorage.setItem("rt_fileName", currentFile.name);
-  } catch(e) {}
-  const redirect = window.location.origin + window.location.pathname;
-  const scope = "https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/cloud-vision";
-  const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(config.clientId)}&redirect_uri=${encodeURIComponent(redirect)}&response_type=token&scope=${encodeURIComponent(scope)}&prompt=consent`;
-  // Full page redirect instead of popup
-  window.location.href = url;
-}
-
-function checkHashToken() {
-  if (window.location.hash.includes("access_token")) {
-    const p = new URLSearchParams(window.location.hash.substring(1));
-    accessToken = p.get("access_token");
-    window.history.replaceState(null, "", window.location.pathname);
-    return true;
-  }
-  return false;
-}
-
-async function getToken() {
-  if (accessToken) return accessToken;
-  // Redirect to Google — this won't return, page reloads after auth
-  doAuth();
-  // Throw to stop the current flow; it resumes on page reload
-  throw new Error("__redirect__");
-}
-
-// ============ GOOGLE APIs ============
-async function visionOCR(token, base64) {
-  const resp = await fetch(`https://vision.googleapis.com/v1/images:annotate?access_token=${encodeURIComponent(token)}`, {
+function visionOCR(token, b64) {
+  return fetch("https://vision.googleapis.com/v1/images:annotate?access_token=" + encodeURIComponent(token), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ requests: [{ image: { content: base64 }, features: [{ type: "TEXT_DETECTION", maxResults: 1 }] }] })
+    body: JSON.stringify({ requests: [{ image: { content: b64 }, features: [{ type: "TEXT_DETECTION", maxResults: 1 }] }] })
+  }).then(function(r) {
+    if (!r.ok) return r.text().then(function(t) { throw new Error("Vision: " + t.substring(0, 200)); });
+    return r.json();
+  }).then(function(d) {
+    if (d.responses && d.responses[0] && d.responses[0].error) throw new Error("Vision: " + d.responses[0].error.message);
+    if (d.responses && d.responses[0] && d.responses[0].fullTextAnnotation) return d.responses[0].fullTextAnnotation.text;
+    if (d.responses && d.responses[0] && d.responses[0].textAnnotations && d.responses[0].textAnnotations[0]) return d.responses[0].textAnnotations[0].description;
+    return "";
   });
-  if (!resp.ok) throw new Error("Vision API: " + (await resp.text()).substring(0, 200));
-  const data = await resp.json();
-  const txt = data.responses?.[0]?.fullTextAnnotation?.text || data.responses?.[0]?.textAnnotations?.[0]?.description || "";
-  if (!txt) throw new Error("No text detected in image");
-  return txt;
 }
 
-async function getOrCreateFolder(token, label) {
-  const q = `name='${label}' and '${config.folderId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`;
-  const r = await fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id)`, { headers: { Authorization: `Bearer ${token}` } });
-  const d = await r.json();
-  if (d.files?.length > 0) return d.files[0].id;
-  const cr = await fetch("https://www.googleapis.com/drive/v3/files", {
-    method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ name: label, mimeType: "application/vnd.google-apps.folder", parents: [config.folderId] })
-  });
-  return (await cr.json()).id;
-}
-
-async function getOrCreateSheet(token, label) {
-  const r = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${config.spreadsheetId}?fields=sheets.properties`, { headers: { Authorization: `Bearer ${token}` } });
-  const meta = await r.json();
-  if (meta.sheets?.find(s => s.properties.title === label)) return label;
-  await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${config.spreadsheetId}:batchUpdate`, {
-    method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ requests: [{ addSheet: { properties: { title: label } } }] })
-  });
-  await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${config.spreadsheetId}/values/${encodeURIComponent(label)}!A1:G1?valueInputOption=USER_ENTERED`, {
-    method: "PUT", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ values: [["Date","Merchant","Description","Total","Currency","Drive URL","Logged At"]] })
-  });
-  return label;
-}
-
-// ============ SCREENS ============
-function renderCapture() {
-  let historyHtml = "";
-  if (history.length > 0) {
-    const items = history.slice().reverse().map(h =>
-      `<div class="receipt-item"><div style="min-width:0;"><strong style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${h.merchant||"Receipt"}</strong><span style="font-size:0.75rem;color:#9ca3af;">${h.date} · ${h.monthLabel}</span></div><span style="font-weight:600;color:#15803d;flex-shrink:0;margin-left:0.5rem;">${h.currency} ${h.total}</span></div>`
-    ).join("");
-    historyHtml = `<div style="margin-top:1rem;"><p style="font-size:0.875rem;font-weight:600;color:#6b7280;margin-bottom:0.5rem;">This Session (${history.length})</p><div style="display:flex;flex-direction:column;gap:0.5rem;max-height:13rem;overflow-y:auto;">${items}</div></div>`;
-  }
-
-  document.getElementById("content").innerHTML = `
-    <div style="border:2px dashed #d1d5db;border-radius:1rem;padding:1.5rem;">
-      <div style="text-align:center;font-size:2.5rem;margin-bottom:0.5rem;">🧾</div>
-      <p style="text-align:center;color:#4b5563;font-weight:500;margin-bottom:1rem;">Add a receipt</p>
-      <div style="display:flex;flex-direction:column;gap:0.625rem;">
-        <button class="btn btn-primary" onclick="document.getElementById('cameraIn').click()">
-          <span style="font-size:1.25rem;">📸</span><div><div style="font-size:0.875rem;font-weight:600;">Take Photo</div><div style="font-size:0.75rem;opacity:0.7;">Use your camera</div></div>
-        </button>
-        <button class="btn btn-outline" onclick="document.getElementById('photoIn').click()">
-          <span style="font-size:1.25rem;">🖼️</span><div><div style="font-size:0.875rem;font-weight:600;">Choose Image</div><div style="font-size:0.75rem;color:#9ca3af;">From Photos library</div></div>
-        </button>
-        <button class="btn btn-outline" onclick="document.getElementById('pdfIn').click()">
-          <span style="font-size:1.25rem;">📄</span><div><div style="font-size:0.875rem;font-weight:600;">Choose PDF</div><div style="font-size:0.75rem;color:#9ca3af;">From Files app</div></div>
-        </button>
-      </div>
-    </div>
-    <input type="file" id="cameraIn" accept="image/*" capture="environment" onchange="handleFile(event)" style="display:none;">
-    <input type="file" id="photoIn" accept="image/*" onchange="handleFile(event)" style="display:none;">
-    <input type="file" id="pdfIn" accept="application/pdf" onchange="handleFile(event)" style="display:none;">
-    ${historyHtml}
-  `;
-}
-
-function renderReview(loading) {
-  let previewHtml = "";
-  if (currentPreview) {
-    previewHtml = `<div style="border:1px solid #e5e7eb;border-radius:1rem;overflow:hidden;max-height:10rem;display:flex;align-items:center;justify-content:center;background:#f9fafb;margin-bottom:1rem;"><img src="${currentPreview}" style="max-height:10rem;object-fit:contain;"></div>`;
-  } else if (currentFile) {
-    previewHtml = `<div style="border:1px solid #e5e7eb;border-radius:1rem;background:#f9fafb;padding:1.5rem;display:flex;align-items:center;justify-content:center;gap:0.75rem;margin-bottom:1rem;"><span style="font-size:2rem;">📄</span><div><p style="font-weight:500;font-size:0.875rem;">${currentFile.name}</p><p style="font-size:0.75rem;color:#9ca3af;">PDF</p></div></div>`;
-  }
-
-  if (loading) {
-    document.getElementById("content").innerHTML = `
-      ${previewHtml}
-      <div style="display:flex;align-items:center;justify-content:center;padding:1.5rem;gap:0.75rem;">
-        <div class="spinner"></div><span style="color:#6b7280;font-size:0.875rem;">Reading receipt...</span>
-      </div>`;
-    return;
-  }
-
-  const ml = formData.date ? getMonthLabel(formData.date) : "";
-  const ocrToggle = ocrText ? `<button onclick="toggleOcr()" style="font-size:0.75rem;color:#9ca3af;background:none;border:none;cursor:pointer;text-decoration:underline;" id="ocrToggle">Show raw text</button>` : "";
-  const ocrBox = ocrText ? `<div id="ocrBox" class="ocr-box hidden">${ocrText.replace(/</g,"&lt;")}</div>` : "";
-
-  document.getElementById("content").innerHTML = `
-    ${previewHtml}
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;">
-      <h3 style="font-size:0.875rem;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">Receipt Details</h3>
-      <div style="display:flex;align-items:center;gap:0.5rem;">
-        ${ml ? `<span class="badge">${ml}</span>` : ""}
-        ${ocrToggle}
-      </div>
-    </div>
-    ${ocrBox}
-    ${[["Merchant","merchant","e.g. Chili's"],["Date","date","YYYY-MM-DD"],["Total","total","e.g. 26.40"],["Currency","currency","e.g. CAD"],["Description","description","e.g. Breakfast"]].map(([l,k,p])=>
-      `<div class="field-row"><label class="field-label">${l}</label><input class="input" value="${formData[k]||""}" placeholder="${p}" oninput="formData.${k}=this.value;updateBadge()"></div>`
-    ).join("")}
-    <div style="display:flex;gap:0.75rem;margin-top:0.75rem;">
-      <button class="btn btn-outline" onclick="resetAll()" style="flex:1;justify-content:center;">Cancel</button>
-      <button class="btn btn-primary" id="saveBtn" onclick="uploadAndLog()" style="flex:1;justify-content:center;" ${!formData.total?"disabled":""}>Save & Log</button>
-    </div>
-  `;
-}
-
-function renderDone() {
-  const ml = getMonthLabel(formData.date);
-  document.getElementById("content").innerHTML = `
-    <div style="text-align:center;padding:1rem 0;">
-      <div style="font-size:3rem;margin-bottom:0.75rem;">✅</div>
-      <h2 style="font-size:1.25rem;font-weight:700;">Receipt Saved!</h2>
-      <p style="color:#6b7280;font-size:0.875rem;margin-top:0.25rem;">Filed under <strong>${ml}</strong></p>
-      <div class="success-box" style="margin-top:1rem;">
-        <p style="font-size:0.875rem;"><span style="color:#6b7280;">Merchant:</span> <strong>${formData.merchant}</strong></p>
-        <p style="font-size:0.875rem;"><span style="color:#6b7280;">Amount:</span> <strong>${formData.currency} ${formData.total}</strong></p>
-        <p style="font-size:0.875rem;"><span style="color:#6b7280;">Date:</span> <strong>${formData.date}</strong></p>
-      </div>
-      <button class="btn btn-primary" onclick="resetAll()" style="margin-top:1rem;justify-content:center;">Scan Another Receipt</button>
-    </div>
-  `;
-}
-
-// ============ ACTIONS ============
-async function handleFile(e) {
-  const file = e.target.files?.[0];
-  if (!file) return;
-  e.target.value = "";
-  currentFile = file;
-  formData = { merchant:"", date:"", total:"", currency:"", description:"" };
-  ocrText = "";
-
-  const isPdf = file.type === "application/pdf";
-  const dataUrl = await fileToBase64(file);
-  let b64;
-
-  if (!isPdf) {
-    const resized = await resizeImage(dataUrl, 1024);
-    currentPreview = resized;
-    b64 = resized.split(",")[1];
-  } else {
-    currentPreview = null;
-    b64 = dataUrl.split(",")[1];
-  }
-
-  renderReview(true);
-  setStatus("Signing in...");
-
-  let token;
-  try { token = await getToken(); } catch(err) {   setStatus("Sign-in required: " + err.message); renderReview(false); return; }
-
-  setStatus("Reading receipt text...");
-  try {
-    ocrText = await visionOCR(token, b64);
-    formData = parseReceipt(ocrText);
-    setStatus("Receipt analyzed! Review and save.");
-  } catch(err) {
-    setStatus("OCR failed: " + err.message);
-    formData.date = new Date().toISOString().split("T")[0];
-  }
-  renderReview(false);
-}
-
-async function uploadAndLog() {
-  if (!currentFile || !formData.total) return;
-  const btn = document.getElementById("saveBtn");
-  if (btn) { btn.disabled = true; btn.innerHTML = '<div class="spinner spinner-white" style="width:1rem;height:1rem;"></div> Saving...'; }
-
-  let token;
-  try { token = await getToken(); } catch(err) { if (err.message === "__redirect__") return; setStatus("Auth failed: " + err.message); renderReview(false); return; }
-
-  const ml = getMonthLabel(formData.date);
-
-  setStatus(`Creating folder: ${ml}...`);
-  let fid;
-  try { fid = await getOrCreateFolder(token, ml); }
-  catch(err) { setStatus("Folder error: " + err.message); renderReview(false); return; }
-
-  setStatus("Uploading to Drive...");
-  let driveUrl = "";
-  try {
-    const ext = currentFile.type === "application/pdf" ? "pdf" : "jpg";
-    const safe = (formData.merchant||"receipt").replace(/[^a-zA-Z0-9 ]/g,"").substring(0,30).trim().replace(/\s+/g,"_");
-    const meta = { name: `${safe}_${formData.date||"unknown"}_${Date.now()}.${ext}`, parents: [fid] };
-    const fd = new FormData();
-    fd.append("metadata", new Blob([JSON.stringify(meta)], { type: "application/json" }));
-    fd.append("file", currentFile);
-    const r = await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink", {
-      method: "POST", headers: { Authorization: `Bearer ${token}` }, body: fd
+function mkFolder(token, label, parentId) {
+  var q = "name='" + label + "' and '" + parentId + "' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false";
+  return fetch("https://www.googleapis.com/drive/v3/files?q=" + encodeURIComponent(q) + "&fields=files(id)", { headers: { Authorization: "Bearer " + token } })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.files && d.files.length > 0) return d.files[0].id;
+      return fetch("https://www.googleapis.com/drive/v3/files", { method: "POST", headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" }, body: JSON.stringify({ name: label, mimeType: "application/vnd.google-apps.folder", parents: [parentId] }) }).then(function(r) { return r.json(); }).then(function(d) { return d.id; });
     });
-    if (!r.ok) throw new Error(await r.text());
-    const d = await r.json();
-    driveUrl = d.webViewLink || `https://drive.google.com/file/d/${d.id}/view`;
-  } catch(err) { setStatus("Drive error: " + err.message); renderReview(false); return; }
-
-  setStatus(`Logging to sheet: ${ml}...`);
-  try {
-    const tab = await getOrCreateSheet(token, ml);
-    const row = [formData.date, formData.merchant, formData.description, formData.total, formData.currency, driveUrl, new Date().toISOString()];
-    const r = await fetch(
-      `https://sheets.googleapis.com/v4/spreadsheets/${config.spreadsheetId}/values/${encodeURIComponent(tab)}!A:G:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`,
-      { method:"POST", headers:{ Authorization:`Bearer ${token}`, "Content-Type":"application/json" }, body:JSON.stringify({ values:[row] }) }
-    );
-    if (!r.ok) throw new Error(await r.text());
-  } catch(err) { setStatus("Sheet error: " + err.message); renderReview(false); return; }
-
-  history.push({ ...formData, driveUrl, monthLabel: ml });
-  setStatus("Done! Receipt saved and logged.");
-  renderDone();
 }
 
-function resetAll() {
-  currentFile = null; currentPreview = null; ocrText = "";
-  formData = { merchant:"", date:"", total:"", currency:"", description:"" };
-  setStatus("");
-  renderCapture();
+function mkSheet(token, label, sheetId) {
+  return fetch("https://sheets.googleapis.com/v4/spreadsheets/" + sheetId + "?fields=sheets.properties", { headers: { Authorization: "Bearer " + token } })
+    .then(function(r) { return r.json(); })
+    .then(function(meta) {
+      var found = false;
+      if (meta.sheets) { for (var i = 0; i < meta.sheets.length; i++) { if (meta.sheets[i].properties.title === label) { found = true; break; } } }
+      if (found) return label;
+      return fetch("https://sheets.googleapis.com/v4/spreadsheets/" + sheetId + ":batchUpdate", { method: "POST", headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" }, body: JSON.stringify({ requests: [{ addSheet: { properties: { title: label } } }] }) })
+        .then(function() {
+          return fetch("https://sheets.googleapis.com/v4/spreadsheets/" + sheetId + "/values/" + encodeURIComponent(label) + "!A1:J1?valueInputOption=USER_ENTERED", { method: "PUT", headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" }, body: JSON.stringify({ values: [HDRS] }) });
+        }).then(function() { return label; });
+    });
 }
 
-function toggleOcr() {
-  const box = document.getElementById("ocrBox");
-  const btn = document.getElementById("ocrToggle");
-  if (box.classList.contains("hidden")) { box.classList.remove("hidden"); btn.textContent = "Hide raw text"; }
-  else { box.classList.add("hidden"); btn.textContent = "Show raw text"; }
-}
+export default function App() {
+  var storedStaff = "";
+  try { storedStaff = localStorage.getItem("rt_staff") || ""; } catch (e) {}
 
-function updateBadge() {
-  const btn = document.getElementById("saveBtn");
-  if (btn) btn.disabled = !formData.total;
-}
+  var [cfg, setCfg] = useState({ clientId: DEF_CID, folderId: DEF_FID, sheetId: DEF_SID });
+  var [staff, setStaffState] = useState(storedStaff);
+  var [tok, setTok] = useState(function() {
+    if (window.location.hash.indexOf("access_token") >= 0) {
+      var p = new URLSearchParams(window.location.hash.substring(1));
+      var t = p.get("access_token");
+      window.history.replaceState(null, "", window.location.pathname);
+      return t;
+    }
+    return null;
+  });
+  var [step, setStep] = useState("capture");
+  var [file, setFile] = useState(null);
+  var [preview, setPreview] = useState(null);
+  var [fd, setFd] = useState({ staff: storedStaff, date: "", merchant: "", category: "Food", description: "", total: "", currency: "", payment: "" });
+  var [status, setStatus] = useState(tok ? "Signed in! Ready to scan." : "");
+  var [processing, setProcessing] = useState(false);
+  var [hist, setHist] = useState([]);
+  var [ocrText, setOcrText] = useState("");
+  var [showOcr, setShowOcr] = useState(false);
+  var [showSettings, setShowSettings] = useState(false);
+  var [showStaffPrompt, setShowStaffPrompt] = useState(!storedStaff);
+  var [tmpStaff, setTmpStaff] = useState("");
+  var [tmpCfg, setTmpCfg] = useState({ ...cfg, staff: storedStaff });
 
-// ============ SETTINGS ============
-function showSettings() {
-  document.getElementById("cfgClientId").value = config.clientId;
-  document.getElementById("cfgFolder").value = config.folderId;
-  document.getElementById("cfgSheet").value = config.spreadsheetId;
-  document.getElementById("originDisplay").textContent = window.location.origin + window.location.pathname;
-  document.getElementById("settingsModal").classList.remove("hidden");
-}
-function hideSettings() { document.getElementById("settingsModal").classList.add("hidden"); }
-function saveSettings() {
-  config.clientId = document.getElementById("cfgClientId").value.trim();
-  config.folderId = extractId(document.getElementById("cfgFolder").value);
-  config.spreadsheetId = extractId(document.getElementById("cfgSheet").value);
-  accessToken = null;
-  hideSettings();
-  setStatus("Settings saved. You'll sign in on next action.");
-}
+  var camRef = useRef(null);
+  var photoRef = useRef(null);
+  var pdfRef = useRef(null);
 
-// ============ INIT ============
-const wasAuthed = checkHashToken();
-renderCapture();
-if (wasAuthed) setStatus("Signed in! Ready to scan receipts.");
-</script>
+  function setStaff(name) {
+    setStaffState(name);
+    try { localStorage.setItem("rt_staff", name); } catch (e) {}
+  }
 
-</body>
-</html>
+  function doAuth() {
+    var rd = window.location.origin + window.location.pathname;
+    var sc = "https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/cloud-vision";
+    window.location.href = "https://accounts.google.com/o/oauth2/v2/auth?client_id=" + encodeURIComponent(cfg.clientId) + "&redirect_uri=" + encodeURIComponent(rd) + "&response_type=token&scope=" + encodeURIComponent(sc) + "&prompt=consent";
+  }
+
+  function updateField(key, val) {
+    setFd(function(prev) { var n = {}; for (var k in prev) n[k] = prev[k]; n[key] = val; return n; });
+  }
+
+  function handleFile(e) {
+    var f = e.target.files ? e.target.files[0] : null;
+    if (!f) return;
+    e.target.value = "";
+    if (!staff) { setShowStaffPrompt(true); return; }
+    if (!tok) { doAuth(); return; }
+
+    setFile(f);
+    setOcrText("");
+    setShowOcr(false);
+    setProcessing(true);
+    setStep("review");
+    setStatus("Preparing...");
+
+    var isPdf = f.type === "application/pdf";
+    fileToB64(f).then(function(dataUrl) {
+      if (!isPdf) {
+        return resizeImg(dataUrl, 1024).then(function(resized) {
+          setPreview(resized);
+          return resized.split(",")[1];
+        });
+      } else {
+        setPreview(null);
+        return dataUrl.split(",")[1];
+      }
+    }).then(function(b64) {
+      setStatus("Reading receipt...");
+      return visionOCR(tok, b64);
+    }).then(function(raw) {
+      setOcrText(raw);
+      if (!raw) {
+        setStatus("No text found. Fill in manually.");
+        setFd({ staff: staff, date: new Date().toISOString().split("T")[0], merchant: "", category: "Food", description: "", total: "", currency: "", payment: "" });
+      } else {
+        var parsed = parseReceipt(raw, staff);
+        setFd(parsed);
+        setStatus("Receipt analyzed! Review and save.");
+      }
+      setProcessing(false);
+    }).catch(function(err) {
+      setStatus("Error: " + err.message);
+      setFd({ staff: staff, date: new Date().toISOString().split("T")[0], merchant: "", category: "Food", description: "", total: "", currency: "", payment: "" });
+      setProcessing(false);
+    });
+  }
+
+  function uploadAndLog() {
+    if (!file || !fd.total) return;
+    if (!tok) { doAuth(); return; }
+    setProcessing(true);
+    var monthLabel = getML(fd.date);
+    setStatus("Creating folder: " + monthLabel + "...");
+
+    mkFolder(tok, monthLabel, cfg.folderId).then(function(fid) {
+      setStatus("Uploading to Drive...");
+      var ext = file.type === "application/pdf" ? "pdf" : "jpg";
+      var safe = (fd.merchant || "receipt").replace(/[^a-zA-Z0-9 ]/g, "").substring(0, 30).trim().replace(/\s+/g, "_");
+      var meta = { name: safe + "_" + (fd.date || "unknown") + "_" + Date.now() + "." + ext, parents: [fid] };
+      var form = new FormData();
+      form.append("metadata", new Blob([JSON.stringify(meta)], { type: "application/json" }));
+      form.append("file", file);
+      return fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink", { method: "POST", headers: { Authorization: "Bearer " + tok }, body: form });
+    }).then(function(r) {
+      if (!r.ok) return r.text().then(function(t) { throw new Error(t); });
+      return r.json();
+    }).then(function(d) {
+      var driveUrl = d.webViewLink || "https://drive.google.com/file/d/" + d.id + "/view";
+      setStatus("Logging to sheet: " + monthLabel + "...");
+      return mkSheet(tok, monthLabel, cfg.sheetId).then(function(tab) {
+        var row = [fd.staff, fd.date, fd.merchant, fd.category, fd.description, fd.total, fd.currency, fd.payment, driveUrl, new Date().toISOString()];
+        return fetch("https://sheets.googleapis.com/v4/spreadsheets/" + cfg.sheetId + "/values/" + encodeURIComponent(tab) + "!A:J:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS", { method: "POST", headers: { Authorization: "Bearer " + tok, "Content-Type": "application/json" }, body: JSON.stringify({ values: [row] }) });
+      }).then(function(r) {
+        if (!r.ok) return r.text().then(function(t) { throw new Error(t); });
+        var entry = {}; for (var k in fd) entry[k] = fd[k]; entry.driveUrl = driveUrl; entry.monthLabel = monthLabel;
+        setHist(function(prev) { return prev.concat([entry]); });
+        setStatus("Done! Receipt saved and logged.");
+        setStep("done");
+        setProcessing(false);
+      });
+    }).catch(function(err) {
+      setStatus("Error: " + err.message);
+      setProcessing(false);
+    });
+  }
+
+  function reset() {
+    setFile(null); setPreview(null); setOcrText(""); setShowOcr(false);
+    setFd({ staff: staff, date: "", merchant: "", category: "Food", description: "", total: "", currency: "", payment: "" });
+    setStatus(""); setStep("capture");
+  }
+
+  // ---- RENDER ----
+  var curOptions = ["", "CAD", "USD", "EUR", "GBP", "AUD", "JPY", "CHF", "Other"];
+
+  return (
+    <div style={{ minHeight: "100vh", background: "linear-gradient(135deg,#0f172a 0%,#1e3a5f 50%,#0f172a 100%)", display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
+
+      {showStaffPrompt && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 55, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
+          <div style={{ background: "#fff", borderRadius: "1rem", maxWidth: "24rem", width: "100%", padding: "1.5rem" }}>
+            <h2 style={{ fontSize: "1.125rem", fontWeight: 700, marginBottom: "0.5rem" }}>Welcome!</h2>
+            <p style={{ fontSize: "0.875rem", color: "#6b7280", marginBottom: "1rem" }}>Enter your name so we know who uploaded each receipt.</p>
+            <input value={tmpStaff} onChange={function(e) { setTmpStaff(e.target.value); }} placeholder="Your name" style={{ width: "100%", border: "1px solid #d1d5db", borderRadius: "0.5rem", padding: "0.5rem 0.75rem", fontSize: "0.875rem", marginBottom: "1rem", outline: "none" }} />
+            <button onClick={function() { if (tmpStaff.trim()) { setStaff(tmpStaff.trim()); setShowStaffPrompt(false); } }} style={{ width: "100%", background: "#2563eb", color: "#fff", border: "none", borderRadius: "0.75rem", padding: "0.75rem", fontWeight: 600, cursor: "pointer" }}>Continue</button>
+          </div>
+        </div>
+      )}
+
+      {showSettings && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
+          <div style={{ background: "#fff", borderRadius: "1rem", maxWidth: "28rem", width: "100%", padding: "1.5rem", maxHeight: "90vh", overflowY: "auto" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "1rem" }}>
+              <h2 style={{ fontSize: "1.125rem", fontWeight: 700 }}>Settings</h2>
+              <button onClick={function() { setShowSettings(false); }} style={{ border: "none", background: "none", color: "#9ca3af", fontSize: "1.25rem", cursor: "pointer" }}>X</button>
+            </div>
+            {[["Your Name", "staff", tmpCfg.staff], ["OAuth Client ID", "clientId", tmpCfg.clientId], ["Drive Folder", "folderId", tmpCfg.folderId], ["Spreadsheet", "sheetId", tmpCfg.sheetId]].map(function(f) {
+              return (
+                <div key={f[1]} style={{ marginBottom: "1rem" }}>
+                  <label style={{ fontSize: "0.8125rem", fontWeight: 500, color: "#374151" }}>{f[0]}</label>
+                  <input value={f[2]} onChange={function(e) { setTmpCfg(function(p) { var n = {}; for (var k in p) n[k] = p[k]; n[f[1]] = e.target.value; return n; }); }} style={{ width: "100%", border: "1px solid #d1d5db", borderRadius: "0.5rem", padding: "0.5rem 0.75rem", fontSize: "0.875rem", marginTop: "0.25rem", outline: "none" }} />
+                </div>
+              );
+            })}
+            <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: "0.75rem", padding: "0.75rem", marginBottom: "1rem" }}>
+              <p style={{ fontSize: "0.75rem", color: "#92400e" }}><strong>APIs:</strong> Drive, Sheets, Cloud Vision</p>
+              <p style={{ fontSize: "0.75rem", color: "#92400e", marginTop: "0.25rem" }}><strong>OAuth origin + redirect:</strong></p>
+              <p style={{ fontSize: "0.7rem", fontFamily: "monospace", color: "#78350f", background: "#fef3c7", padding: "0.25rem 0.5rem", borderRadius: "0.25rem", marginTop: "0.25rem", wordBreak: "break-all" }}>{window.location.origin + window.location.pathname}</p>
+            </div>
+            <button onClick={function() {
+              var nc = { clientId: tmpCfg.clientId.trim(), folderId: xid(tmpCfg.folderId), sheetId: xid(tmpCfg.sheetId) };
+              setCfg(nc);
+              if (tmpCfg.staff.trim()) setStaff(tmpCfg.staff.trim());
+              setTok(null); setShowSettings(false); setStatus("Settings saved.");
+            }} style={{ width: "100%", background: "#2563eb", color: "#fff", border: "none", borderRadius: "0.75rem", padding: "0.75rem", fontWeight: 600, cursor: "pointer" }}>Save</button>
+          </div>
+        </div>
+      )}
+
+      <div style={{ background: "#fff", borderRadius: "1.5rem", boxShadow: "0 25px 50px rgba(0,0,0,0.25)", maxWidth: "28rem", width: "100%", overflow: "hidden" }}>
+
+        <div style={{ background: "linear-gradient(90deg,#2563eb,#4f46e5)", padding: "1.25rem", color: "#fff" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <span style={{ fontSize: "1.5rem" }}>🧾</span>
+              <strong style={{ fontSize: "1.125rem" }}>Receipt Tracker</strong>
+            </div>
+            <button onClick={function() { setTmpCfg({ ...cfg, staff: staff }); setShowSettings(true); }} style={{ background: "rgba(255,255,255,0.2)", border: "none", color: "rgba(255,255,255,0.8)", fontSize: "0.75rem", padding: "0.25rem 0.75rem", borderRadius: "0.5rem", cursor: "pointer" }}>Settings</button>
+          </div>
+          {status && <p style={{ fontSize: "0.8125rem", marginTop: "0.5rem", color: "#bfdbfe" }}>{status}</p>}
+        </div>
+
+        <div style={{ padding: "1.5rem" }}>
+
+          {step === "capture" && (
+            <div>
+              {staff && (
+                <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "0.75rem", padding: "0.5rem 0.75rem", display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem", fontSize: "0.875rem" }}>
+                  <span>👤 <strong>{staff}</strong></span>
+                  <button onClick={function() { setShowStaffPrompt(true); }} style={{ border: "none", background: "none", color: "#2563eb", fontSize: "0.75rem", cursor: "pointer" }}>Change</button>
+                </div>
+              )}
+              <div style={{ border: "2px dashed #d1d5db", borderRadius: "1rem", padding: "1.5rem" }}>
+                <div style={{ textAlign: "center", fontSize: "2.5rem", marginBottom: "0.5rem" }}>🧾</div>
+                <p style={{ textAlign: "center", color: "#4b5563", fontWeight: 500, marginBottom: "1rem" }}>Add a receipt</p>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.625rem" }}>
+                  <button onClick={function() { camRef.current.click(); }} style={{ display: "flex", alignItems: "center", gap: "0.75rem", width: "100%", background: "#2563eb", color: "#fff", border: "none", borderRadius: "0.75rem", padding: "0.75rem 1rem", fontWeight: 600, cursor: "pointer" }}>
+                    <span style={{ fontSize: "1.25rem" }}>📸</span>
+                    <div style={{ textAlign: "left" }}><div style={{ fontSize: "0.875rem" }}>Take Photo</div><div style={{ fontSize: "0.7rem", opacity: 0.7 }}>Camera</div></div>
+                  </button>
+                  <button onClick={function() { photoRef.current.click(); }} style={{ display: "flex", alignItems: "center", gap: "0.75rem", width: "100%", background: "#fff", color: "#374151", border: "2px solid #e5e7eb", borderRadius: "0.75rem", padding: "0.75rem 1rem", fontWeight: 600, cursor: "pointer" }}>
+                    <span style={{ fontSize: "1.25rem" }}>🖼️</span>
+                    <div style={{ textAlign: "left" }}><div style={{ fontSize: "0.875rem" }}>Choose Image</div><div style={{ fontSize: "0.7rem", color: "#9ca3af" }}>Photos library</div></div>
+                  </button>
+                  <button onClick={function() { pdfRef.current.click(); }} style={{ display: "flex", alignItems: "center", gap: "0.75rem", width: "100%", background: "#fff", color: "#374151", border: "2px solid #e5e7eb", borderRadius: "0.75rem", padding: "0.75rem 1rem", fontWeight: 600, cursor: "pointer" }}>
+                    <span style={{ fontSize: "1.25rem" }}>📄</span>
+                    <div style={{ textAlign: "left" }}><div style={{ fontSize: "0.875rem" }}>Choose PDF</div><div style={{ fontSize: "0.7rem", color: "#9ca3af" }}>Files app</div></div>
+                  </button>
+                </div>
+              </div>
+              <input ref={camRef} type="file" accept="image/*" capture="environment" onChange={handleFile} style={{ display: "none" }} />
+              <input ref={photoRef} type="file" accept="image/*" onChange={handleFile} style={{ display: "none" }} />
+              <input ref={pdfRef} type="file" accept="application/pdf" onChange={handleFile} style={{ display: "none" }} />
+              {hist.length > 0 && (
+                <div style={{ marginTop: "1rem" }}>
+                  <p style={{ fontSize: "0.8125rem", fontWeight: 600, color: "#6b7280", marginBottom: "0.5rem" }}>This Session ({hist.length})</p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", maxHeight: "13rem", overflowY: "auto" }}>
+                    {hist.slice().reverse().map(function(h, i) {
+                      return (
+                        <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "#f9fafb", borderRadius: "0.75rem", padding: "0.625rem 1rem", fontSize: "0.875rem" }}>
+                          <div style={{ minWidth: 0 }}>
+                            <strong style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{h.merchant || "Receipt"}</strong>
+                            <span style={{ fontSize: "0.7rem", color: "#9ca3af" }}>{h.date} - {h.category}</span>
+                          </div>
+                          <span style={{ fontWeight: 600, color: "#15803d", flexShrink: 0, marginLeft: "0.5rem" }}>{h.currency} {h.total}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {step === "review" && (
+            <div>
+              {preview && <div style={{ border: "1px solid #e5e7eb", borderRadius: "1rem", overflow: "hidden", maxHeight: "9rem", display: "flex", alignItems: "center", justifyContent: "center", background: "#f9fafb", marginBottom: "0.75rem" }}><img src={preview} style={{ maxHeight: "9rem", objectFit: "contain" }} /></div>}
+              {!preview && file && <div style={{ border: "1px solid #e5e7eb", borderRadius: "1rem", background: "#f9fafb", padding: "1rem", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.75rem", marginBottom: "0.75rem" }}><span style={{ fontSize: "1.75rem" }}>📄</span><div><p style={{ fontWeight: 500, fontSize: "0.8125rem" }}>{file.name}</p><p style={{ fontSize: "0.7rem", color: "#9ca3af" }}>PDF</p></div></div>}
+
+              {processing ? (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "1.5rem", gap: "0.75rem" }}>
+                  <div style={{ width: "1.25rem", height: "1.25rem", border: "2px solid #2563eb", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.6s linear infinite" }}></div>
+                  <span style={{ color: "#6b7280", fontSize: "0.875rem" }}>Reading receipt...</span>
+                  <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+                </div>
+              ) : (
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.5rem" }}>
+                    <h3 style={{ fontSize: "0.8125rem", fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>Receipt Details</h3>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                      {fd.date && <span style={{ fontSize: "0.75rem", background: "#e0e7ff", color: "#4338ca", padding: "0.125rem 0.5rem", borderRadius: "9999px" }}>{getML(fd.date)}</span>}
+                      {ocrText && <button onClick={function() { setShowOcr(!showOcr); }} style={{ fontSize: "0.7rem", color: "#9ca3af", background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}>{showOcr ? "Hide" : "Raw text"}</button>}
+                    </div>
+                  </div>
+                  {showOcr && ocrText && <pre style={{ fontSize: "0.7rem", background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: "0.5rem", padding: "0.75rem", maxHeight: "8rem", overflow: "auto", whiteSpace: "pre-wrap", color: "#6b7280", fontFamily: "monospace", marginBottom: "0.75rem" }}>{ocrText}</pre>}
+
+                  {[["Staff", "staff", "Name"], ["Date", "date", "YYYY-MM-DD"], ["Merchant", "merchant", "Store name"], ["Description", "description", "Items"], ["Total", "total", "e.g. 93.47"], ["Payment", "payment", "e.g. Visa ****2046"]].map(function(f) {
+                    return (
+                      <div key={f[1]} style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.625rem" }}>
+                        <label style={{ fontSize: "0.8125rem", color: "#6b7280", width: "5.5rem", flexShrink: 0 }}>{f[0]}</label>
+                        <input value={fd[f[1]] || ""} onChange={function(e) { updateField(f[1], e.target.value); }} placeholder={f[2]} style={{ flex: 1, border: "1px solid #d1d5db", borderRadius: "0.5rem", padding: "0.5rem 0.75rem", fontSize: "0.875rem", outline: "none" }} />
+                      </div>
+                    );
+                  })}
+
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.625rem" }}>
+                    <label style={{ fontSize: "0.8125rem", color: "#6b7280", width: "5.5rem", flexShrink: 0 }}>Category</label>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "0.375rem", flex: 1 }}>
+                      {CATS.map(function(c) {
+                        var active = fd.category === c;
+                        return <span key={c} onClick={function() { updateField("category", c); }} style={{ fontSize: "0.75rem", padding: "0.3rem 0.6rem", borderRadius: "9999px", border: active ? "1.5px solid #2563eb" : "1.5px solid #d1d5db", background: active ? "#2563eb" : "#fff", color: active ? "#fff" : "#4b5563", cursor: "pointer" }}>{c}</span>;
+                      })}
+                    </div>
+                  </div>
+
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.625rem" }}>
+                    <label style={{ fontSize: "0.8125rem", color: "#6b7280", width: "5.5rem", flexShrink: 0 }}>Currency</label>
+                    <select value={fd.currency} onChange={function(e) { updateField("currency", e.target.value); }} style={{ flex: 1, border: "1px solid #d1d5db", borderRadius: "0.5rem", padding: "0.5rem 0.75rem", fontSize: "0.875rem", outline: "none", background: "#fff" }}>
+                      {curOptions.map(function(c) { return <option key={c} value={c}>{c || "Select..."}</option>; })}
+                    </select>
+                  </div>
+
+                  <div style={{ display: "flex", gap: "0.75rem", marginTop: "0.5rem" }}>
+                    <button onClick={reset} style={{ flex: 1, background: "#fff", color: "#374151", border: "2px solid #e5e7eb", borderRadius: "0.75rem", padding: "0.75rem", fontWeight: 600, cursor: "pointer", textAlign: "center" }}>Cancel</button>
+                    <button onClick={uploadAndLog} disabled={processing || !fd.total} style={{ flex: 1, background: fd.total ? "#2563eb" : "#d1d5db", color: fd.total ? "#fff" : "#9ca3af", border: "none", borderRadius: "0.75rem", padding: "0.75rem", fontWeight: 600, cursor: fd.total ? "pointer" : "not-allowed", textAlign: "center" }}>Save &amp; Log</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {step === "done" && (
+            <div style={{ textAlign: "center", padding: "1rem 0" }}>
+              <div style={{ fontSize: "3rem", marginBottom: "0.5rem" }}>✅</div>
+              <h2 style={{ fontSize: "1.25rem", fontWeight: 700 }}>Receipt Saved!</h2>
+              <p style={{ color: "#6b7280", fontSize: "0.875rem" }}>Filed under <strong>{getML(fd.date)}</strong></p>
+              <div style={{ background: "#f0fdf4", borderRadius: "0.75rem", padding: "1rem", textAlign: "left", marginTop: "1rem" }}>
+                <p style={{ fontSize: "0.8125rem" }}><span style={{ color: "#6b7280" }}>Staff:</span> <strong>{fd.staff}</strong></p>
+                <p style={{ fontSize: "0.8125rem" }}><span style={{ color: "#6b7280" }}>Merchant:</span> <strong>{fd.merchant}</strong></p>
+                <p style={{ fontSize: "0.8125rem" }}><span style={{ color: "#6b7280" }}>Amount:</span> <strong>{fd.currency} {fd.total}</strong></p>
+                <p style={{ fontSize: "0.8125rem" }}><span style={{ color: "#6b7280" }}>Category:</span> <strong>{fd.category}</strong></p>
+                <p style={{ fontSize: "0.8125rem" }}><span style={{ color: "#6b7280" }}>Payment:</span> <strong>{fd.payment || "--"}</strong></p>
+              </div>
+              <button onClick={reset} style={{ marginTop: "1rem", width: "100%", background: "#2563eb", color: "#fff", border: "none", borderRadius: "0.75rem", padding: "0.75rem", fontWeight: 600, cursor: "pointer" }}>Scan Another</button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
