@@ -190,6 +190,7 @@ function extractMerchant(lines) {
     if (line.match(/^[\d\-\/\.\:\s]+$/)) continue;
     if (line.match(/^(tel|phone|fax|www|http|abn|gst|mid|aid|tid)/i)) continue;
     if (line.match(/^\(?\d{3}\)?[\s\-]?\d{3}[\s\-]?\d{4}$/)) continue;
+    if (line.match(/\d{1,2}:\d{2}(:\d{2})?\s*(AM|PM|A|P)\b/i)) continue;
     return line;
   }
   return "";
@@ -227,21 +228,36 @@ function extractDate(lines) {
 }
 
 function extractTotal(text) {
-  var patterns = [
-    /balance\s*due[\s:]*\$?\s*([\d,]+\.\d{2})/gi,
+  var chargedPatterns = [
+    /credit\s*card\s*(?:sale|charge|payment)[\s:]*\$?\s*([\d,]+\.\d{2})/gi,
+    /(?:amount|amt)\s*(?:due|charged|paid)[\s:]*\$?\s*([\d,]+\.\d{2})/gi,
+    /balance\s*due[\s:]*\$?\s*([\d,]+\.\d{2})/gi
+  ];
+  var charged = [];
+  for (var i = 0; i < chargedPatterns.length; i++) {
+    var re = chargedPatterns[i];
+    var match;
+    while ((match = re.exec(text)) !== null) {
+      var val = parseFloat(match[1].replace(/,/g, ""));
+      if (!isNaN(val) && val > 0) charged.push(val);
+    }
+  }
+  if (charged.length > 0) return Math.max.apply(null, charged).toFixed(2);
+
+  var totalPatterns = [
     /grand\s*total[\s:]*\$?\s*(?:CAD|USD|EUR|GBP)?\s*([\d,]+\.\d{2})/gi,
     /\btotal[\s:]*\$?\s*(?:CAD|USD|EUR|GBP)?\s*([\d,]+\.\d{2})/gi
   ];
   var totals = [];
-  for (var i = 0; i < patterns.length; i++) {
-    var re = patterns[i];
+  for (var i = 0; i < totalPatterns.length; i++) {
+    var re = totalPatterns[i];
     var match;
     while ((match = re.exec(text)) !== null) {
       var val = parseFloat(match[1].replace(/,/g, ""));
       if (!isNaN(val) && val > 0) totals.push(val);
     }
   }
-  var subRe = /sub\s*total[\s:]*\$?\s*([\d,]+\.\d{2})/gi;
+  var subRe = /sub\s*-?\s*total[\s:]*\$?\s*([\d,]+\.\d{2})/gi;
   var subtotals = [];
   var sm;
   while ((sm = subRe.exec(text)) !== null) {
@@ -253,8 +269,34 @@ function extractTotal(text) {
     }
     return true;
   });
-  if (filtered.length > 0) return Math.max.apply(null, filtered).toFixed(2);
-  if (totals.length > 0) return Math.max.apply(null, totals).toFixed(2);
+
+  var tipRe = /(?:\btip\b|\bgratuity\b)[\s:]*\$?\s*([\d,]+\.\d{2})/gi;
+  var tipAmount = 0;
+  var tm;
+  while ((tm = tipRe.exec(text)) !== null) {
+    var tv = parseFloat(tm[1].replace(/,/g, ""));
+    if (!isNaN(tv) && tv > 0) tipAmount = Math.max(tipAmount, tv);
+  }
+
+  var baseTotal = 0;
+  if (filtered.length > 0) {
+    baseTotal = Math.max.apply(null, filtered);
+  } else if (totals.length > 0) {
+    baseTotal = Math.max.apply(null, totals);
+  }
+
+  if (baseTotal > 0 && tipAmount > 0) {
+    var alreadyIncludesTip = false;
+    var pool = filtered.length > 0 ? filtered : totals;
+    for (var k = 0; k < pool.length; k++) {
+      if (Math.abs(pool[k] + tipAmount - baseTotal) < 0.05) {
+        alreadyIncludesTip = true;
+        break;
+      }
+    }
+    if (!alreadyIncludesTip) return (baseTotal + tipAmount).toFixed(2);
+  }
+  if (baseTotal > 0) return baseTotal.toFixed(2);
   return "";
 }
 
@@ -330,17 +372,44 @@ function parseReceipt(text, staffName) {
 
 /* ── API Functions ──────────────────────────────────────────────────────── */
 
-function visionOCR(token, base64) {
-  return fetch("https://vision.googleapis.com/v1/images:annotate?access_token=" + encodeURIComponent(token), {
+function visionOCR(token, base64, isPdf) {
+  var url = isPdf
+    ? "https://vision.googleapis.com/v1/files:annotate"
+    : "https://vision.googleapis.com/v1/images:annotate";
+  var requestBody;
+  if (isPdf) {
+    requestBody = {requests: [{
+      inputConfig: {content: base64, mimeType: "application/pdf"},
+      features: [{type: "DOCUMENT_TEXT_DETECTION"}]
+    }]};
+  } else {
+    requestBody = {requests: [{
+      image: {content: base64},
+      features: [{type: "TEXT_DETECTION", maxResults: 1}]
+    }]};
+  }
+  return fetch(url + "?access_token=" + encodeURIComponent(token), {
     method: "POST",
     headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({requests: [{image: {content: base64}, features: [{type: "TEXT_DETECTION", maxResults: 1}]}]})
+    body: JSON.stringify(requestBody)
   })
   .then(function(r) {
     if (!r.ok) return r.text().then(function(t) { throw new Error("Vision: " + t.substring(0, 200)); });
     return r.json();
   })
   .then(function(data) {
+    if (isPdf) {
+      var fileResp = data.responses && data.responses[0];
+      if (fileResp && fileResp.error) throw new Error("Vision: " + fileResp.error.message);
+      var pages = fileResp && fileResp.responses;
+      if (!pages || pages.length === 0) return "";
+      var allText = [];
+      for (var i = 0; i < pages.length; i++) {
+        if (pages[i].fullTextAnnotation) allText.push(pages[i].fullTextAnnotation.text);
+        else if (pages[i].textAnnotations && pages[i].textAnnotations[0]) allText.push(pages[i].textAnnotations[0].description);
+      }
+      return allText.join("\n");
+    }
     var resp = data.responses && data.responses[0];
     if (resp && resp.error) throw new Error("Vision: " + resp.error.message);
     if (resp && resp.fullTextAnnotation) return resp.fullTextAnnotation.text;
@@ -820,7 +889,7 @@ function App() {
     })
     .then(function(base64) {
       setStatus("Reading receipt...");
-      return visionOCR(token, base64);
+      return visionOCR(token, base64, isPdf);
     })
     .then(function(rawText) {
       setOcrText(rawText);
